@@ -23,10 +23,10 @@ const greeting = {
   username: "Carlos Larriu",
   title: "Hello world, I'm Carlos",
   subTitle: emoji(
-    "\"There are two ways of constructing a software design. One way is to make it so simple that there are obviously no deficiencies and the other is to make it so complicated that there are no obvious deficiencies.\" - C.A.R Hoare"
+    "\"There are two ways of constructing a software design. One way is to make it so simple that there are obviously no deficiencies and the other is to make it so complicated that there are no obvious deficiencies.\" C.A.R Hoare"
   ),
   resumeLink:
-    "https://drive.google.com/file/d/1ofFdKF_mqscH8WvXkSObnVvC9kK7Ldlu/view?usp=sharing", // Set to empty to hide the button
+    "https://drive.google.com/file/d/1zsV3ukhzbK5Q8a8s2NOi0nayIqZb1bzl/view?usp=share_link", // Set to empty to hide the button
   displayGreeting: true // Set false to hide this section, defaults to true
 };
 
@@ -36,7 +36,7 @@ const socialMediaLinks = {
   github: "https://github.com/clarriu97",
   linkedin: "https://www.linkedin.com/in/carloslarriu/",
   gmail: "larriucarlos@gmail.com",
-  gitlab: "https://gitlab.com/saadpasta",
+  gitlab: "https://gitlab.com/clarriu97",
   medium: "https://medium.com/@saadpasta",
   stackoverflow: "https://stackoverflow.com/users/10422806/saad-pasta",
   // Instagram, Twitter and Kaggle are also supported in the links!
@@ -63,24 +63,36 @@ https://fontawesome.com/icons?d=gallery */
 
   softwareSkills: [
     {
+      skillName: "Docker",
+      fontAwesomeClassname: "fab fa-docker"
+    },
+    {
       skillName: "Python",
       fontAwesomeClassname: "fab fa-python"
     },
     {
       skillName: "Flask",
-      fontAwesomeClassname: "fab fa-pepper-hot"
+      fontAwesomeClassname: "fab fa-solid fa-pepper-hot"
     },
     {
       skillName: "Telegram Bots",
-      fontAwesomeClassname: "fab fa-message-bot"
+      fontAwesomeClassname: "fab fa-telegram"
     },
     {
       skillName: "Java",
       fontAwesomeClassname: "fab fa-java"
     },
     {
-      skillName: "Docker",
-      fontAwesomeClassname: "fab fa-docker"
+      skillName: "Bash",
+      fontAwesomeClassname: "si si-gnubash"
+    },
+    {
+      skillName: "Linux",
+      fontAwesomeClassname: "si si-linux"
+    },
+    {
+      skillName: "Git",
+      fontAwesomeClassname: "software-skill-inline"
     }
   ],
   display: true // Set false to hide this section, defaults to true
@@ -135,13 +147,12 @@ const workExperiences = {
       company: "Veridas",
       companylogo: require("./assets/images/veridasLogo.png"),
       date: "July 2021 – Present",
-      desc: "Voice Biometrics services developer.",
+      desc: "Voice Biometrics Software Developer",
       descBullets: [
-        "Design, define and implement technical requirements of the company Voice Biometrics products",
-        "Backend Development with Python, Flask and Gunicorn",
-        "Development and implementation of applications based on API's and microservices",
-        "Deployment and virutalization of applications with Docker",
-        "Development of Telegram bots as clients of our services"
+        "Design, development and maintenance of the whole das-Peak environment, a Veridas SAAS microservice based on Artificial Intelligence applied to the field of voice biometrics. This is done by using technologies such as Python, Flask, Gunicorn and Docker.",
+        "Design, development and maintenance of a few Telegram bots used to collect audio datasets and show Veridas voice biometrics technology to our customers.",
+        "Devops profile: huge effort in CI/CD, Gitlab pipelines, and software architecture, quality and testing",
+        "Production monitoring with Elastic, Kibana and Grafana"
       ]
     },
     {
@@ -149,7 +160,7 @@ const workExperiences = {
       company: "Veridas",
       companylogo: require("./assets/images/veridasLogo.png"),
       date: "Feb 2021 – Jun 2021",
-      desc: "Development of Gitlab Pipelines to integrate CI/CD in Front projects. Focused on Preparing, Testing, Code quality, Documentation and Release stages of React Projects."
+      desc: "Development of Gitlab Pipelines to integrate CI/CD in Front projects. Focused on preparing, testing, linting, documentation and release stages of web projects."
     },
     {
       role: "Tennis and paddle trainer",
@@ -312,7 +323,7 @@ const contactInfo = {
   title: emoji("Contact Me ☎️"),
   subtitle:
     "Discuss a project or just want to say hi? My Inbox is open for all.",
-  number: "+34 380587439",
+  number: "+34 680587439",
   email_address: "larriucarlos@gmail.com"
 };
 
@@ -320,10 +331,10 @@ const contactInfo = {
 
 const twitterDetails = {
   userName: "carloslarriu", //Replace "twitter" with your twitter username without @
-  display: true // Set true to display this section, defaults to false
+  display: false // Set true to display this section, defaults to false
 };
 
-const isHireable = false; // Set false if you are not looking for a job. Also isHireable will be display as Open for opportunities: Yes/No in the GitHub footer
+const isHireable = true; // Set false if you are not looking for a job. Also isHireable will be display as Open for opportunities: Yes/No in the GitHub footer
 
 export {
   illustration,
