@@ -48,14 +48,11 @@ const socialMediaLinks = {
 
 const skillsSection = {
   title: "What I do",
-  subTitle: "CRAZY BACKEND DEVELOPMENT",
+  subTitle: "CRAZY SOFTWARE DEVELOPMENT",
   skills: [
-    emoji(
-      "⚡ Development and implementation of applications based on API's and microservices"
-    ),
+    emoji("⚡ Development and implementation of AI-based API's and microservices"),
     emoji("⚡ CI/CD Always and in any situation"),
-    emoji("⚡ Sociable"),
-    emoji("⚡ Enthusiastic about technology")
+    emoji("⚡ Communication, collaboration and adaptability")
   ],
 
   /* Make Sure to include correct Font Awesome Classname to view your icon
@@ -71,10 +68,6 @@ https://fontawesome.com/icons?d=gallery */
       fontAwesomeClassname: "fab fa-python"
     },
     {
-      skillName: "Flask",
-      fontAwesomeClassname: "fab fa-solid fa-pepper-hot"
-    },
-    {
       skillName: "Telegram Bots",
       fontAwesomeClassname: "fab fa-telegram"
     },
@@ -83,16 +76,12 @@ https://fontawesome.com/icons?d=gallery */
       fontAwesomeClassname: "fab fa-java"
     },
     {
-      skillName: "Bash",
-      fontAwesomeClassname: "si si-gnubash"
-    },
-    {
       skillName: "Linux",
-      fontAwesomeClassname: "si si-linux"
+      fontAwesomeClassname: "fab fa-brands fa-linux"
     },
     {
       skillName: "Git",
-      fontAwesomeClassname: "software-skill-inline"
+      fontAwesomeClassname: "fab fa-brands fa-git-alt"
     }
   ],
   display: true // Set false to hide this section, defaults to true
@@ -108,9 +97,8 @@ const educationInfo = {
       logo: require("./assets/images/upnaLogo.png"),
       subHeader: "Degree in Telecommunication Engineering",
       duration: "September 2016 - April 2021",
-      desc: "Telematic mention",
       descBullets: [
-        ""
+        "Telematic mention"
       ]
     }
   ]
@@ -122,15 +110,15 @@ const techStack = {
   viewSkillBars: true, //Set it to true to show Proficiency Section
   experience: [
     {
-      Stack: "Backend Development", //Insert stack or technology you have experience in
+      Stack: "Microservices architecture", //Insert stack or technology you have experience in
       progressPercentage: "85%" //Insert relative proficiency in percentage
     },
     {
-      Stack: "CI/CD",
+      Stack: "DevOps, CI/CD, QA",
       progressPercentage: "90%"
     },
     {
-      Stack: "Operations",
+      Stack: "Object Oriented Programming",
       progressPercentage: "80%"
     }
   ],
