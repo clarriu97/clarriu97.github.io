@@ -37,8 +37,8 @@ const socialMediaLinks = {
   linkedin: "https://www.linkedin.com/in/carloslarriu/",
   gmail: "larriucarlos@gmail.com",
   gitlab: "https://gitlab.com/clarriu97",
-  medium: "https://medium.com/@saadpasta",
-  stackoverflow: "https://stackoverflow.com/users/10422806/saad-pasta",
+  medium: "https://medium.com/@larriucarlos",
+  stackoverflow: "https://stackoverflow.com/users/14889035/larrib0y",
   // Instagram, Twitter and Kaggle are also supported in the links!
   // To customize icons and social links, tweak src/components/SocialMedia
   display: true // Set true to display this section, defaults to false
@@ -324,7 +324,7 @@ const contactInfo = {
   subtitle:
     "Discuss a project or just want to say hi? My Inbox is open for all.",
   number: "+34 680587439",
-  email_address: "larriucarlos@gmail.com"
+  email_address: "larriucarlos@gmail.com",
 };
 
 // Twitter Section
