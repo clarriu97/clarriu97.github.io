@@ -26,7 +26,7 @@ const greeting = {
     "\"There are two ways of constructing a software design. One way is to make it so simple that there are obviously no deficiencies and the other is to make it so complicated that there are no obvious deficiencies.\" C.A.R Hoare"
   ),
   resumeLink:
-    "https://drive.google.com/file/d/1zsV3ukhzbK5Q8a8s2NOi0nayIqZb1bzl/view?usp=share_link", // Set to empty to hide the button
+    "https://drive.google.com/file/d/1nJQ0Hk3VNayMva89JlmxPtWnMEdhV-Qx/view?usp=sharing", // Set to empty to hide the button
   displayGreeting: true // Set false to hide this section, defaults to true
 };
 
