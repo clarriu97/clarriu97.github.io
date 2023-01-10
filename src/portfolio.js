@@ -51,7 +51,7 @@ const skillsSection = {
   subTitle: "CRAZY SOFTWARE DEVELOPMENT",
   skills: [
     emoji("⚡ Development and implementation of AI-based API's and microservices"),
-    emoji("⚡ CI/CD Always and in any situation"),
+    emoji("⚡ CI/CD always and in any situation"),
     emoji("⚡ Communication, collaboration and adaptability")
   ],
 
@@ -111,7 +111,7 @@ const techStack = {
   experience: [
     {
       Stack: "Microservices architecture", //Insert stack or technology you have experience in
-      progressPercentage: "85%" //Insert relative proficiency in percentage
+      progressPercentage: "80%" //Insert relative proficiency in percentage
     },
     {
       Stack: "DevOps, CI/CD, QA",
@@ -119,7 +119,7 @@ const techStack = {
     },
     {
       Stack: "Object Oriented Programming",
-      progressPercentage: "80%"
+      progressPercentage: "70%"
     }
   ],
   displayCodersrank: false // Set true to display codersrank badges section need to changes your username in src/containers/skillProgress/skillProgress.js:17:62, defaults to false
@@ -131,7 +131,7 @@ const workExperiences = {
   display: true, //Set it to true to show workExperiences Section
   experience: [
     {
-      role: "Backend Engineer",
+      role: "Software Engineer",
       company: "Veridas",
       companylogo: require("./assets/images/veridasLogo.png"),
       date: "July 2021 – Present",
