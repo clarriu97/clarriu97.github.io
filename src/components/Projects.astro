@@ -1,39 +1,71 @@
 ---
 import GitHub from "./icons/GitHub.astro"
-import NextJS from "./icons/NextJS.astro"
-import Tailwind from "./icons/Tailwind.astro"
 import Link from "./icons/Link.astro"
 import LinkButton from "./LinkButton.astro"
 
 const TAGS = {
-  NEXT: {
-    name: "Next.js",
-    class: "bg-black text-white",
-    icon: NextJS,
+  PYTHON: {
+    name: "Python",
+    class: "bg-blue-500 text-white",
   },
-  TAILWIND: {
-    name: "Tailwind CSS",
-    class: "bg-[#003159] text-white",
-    icon: Tailwind,
+  DYNACONF: {
+    name: "Dynaconf",
+    class: "bg-gray-700 text-white",
+  },
+  GITHUB_ACTIONS: {
+    name: "GitHub Actions",
+    class: "bg-gray-800 text-white",
+  },
+  PYDANTIC: {
+    name: "Pydantic",
+    class: "bg-green-500 text-white",
+  },
+  MKDOCS: {
+    name: "MkDocs",
+    class: "bg-yellow-500 text-black",
+  },
+  PUBLIC_SPEAKING: {
+    name: "Public Speaking",
+    class: "bg-red-500 text-white",
+  },
+  AI: {
+    name: "AI",
+    class: "bg-purple-600 text-white",
+  },
+  PHP: {
+    name: "PHP",
+    class: "bg-blue-800 text-white",
+  },
+  DATABASES: {
+    name: "Databases",
+    class: "bg-orange-500 text-white",
   },
 }
+
 const PROJECTS = [
   {
-    title: "SVGL - A beautiful library with SVG logos",
+    title: "Vericlient",
     description:
-      "Biblioteca de logos SVG de las marcas más populares. +10k visitas al mes. +2K svgs descargados. Creado desde cero con Next.js, React y Tailwind CSS.",
-    link: "https://svgl.vercel.app/",
-    github: "https://github.com/pheralb/svgl",
-    image: "/projects/svgl.webp",
-    tags: [TAGS.NEXT, TAGS.TAILWIND],
+      "Python interface to consume Veridas APIs. Includes advanced configuration management and automated workflows.",
+    github: "https://github.com/clarriu97/vericlient",
+    image: "/projects/vericlient.webp",
+    tags: [TAGS.PYTHON, TAGS.DYNACONF, TAGS.GITHUB_ACTIONS, TAGS.PYDANTIC, TAGS.MKDOCS],
   },
   {
-    title: "AdventJS - Retos de programación con JavaScript y TypeScript",
+    title: "TERTULia",
     description:
-      "Plataforma gratuita con retos de programación. Más de 1 millón de visitas en un mes. +50K retos completados. Creada desde cero con Next.js, React y Tailwind CSS.",
-    link: "https://adventjs.dev",
-    image: "/projects/adventjs.webp",
-    tags: [TAGS.NEXT, TAGS.TAILWIND],
+      "Panelist in a podcast discussing AI and software development. Engaging in deep conversations about the latest trends in technology.",
+    link: "https://ironbar.github.io/tertulia_inteligencia_artificial/",
+    image: "/projects/tertulia.webp",
+    tags: [TAGS.PUBLIC_SPEAKING, TAGS.AI],
+  },
+  {
+    title: "Bachelor's Thesis - Medical Open World",
+    description:
+      "Developed a full-stack Android app for an NGO to monitor incubators. The app allows medical staff to track the health of babies and manage the incubators remotely.",
+    link: "https://medicalopenworld.org/",
+    image: "/projects/medical_open_world.webp",
+    tags: [TAGS.PHP, TAGS.DATABASES],
   },
 ]
 ---
@@ -44,7 +76,7 @@ const PROJECTS = [
     <article class="flex flex-col space-x-0 space-y-8 group md:flex-row md:space-x-8 md:space-y-0">
   <div class="w-full md:w-1/2">
     <div class="relative flex flex-col items-center col-span-6 row-span-5 gap-8 transition duration-500 ease-in-out transform shadow-xl overflow-clip rounded-xl sm:rounded-xl md:group-hover:-translate-y-1 md:group-hover:shadow-2xl lg:border lg:border-gray-800 lg:hover:border-gray-700 lg:hover:bg-gray-800/50">
-      <img alt="Recién llegado vs 5 años en Nueva Zelanda" class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" src={image} />
+      <img alt={title} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" src={image} />
     </div>
   </div>
 
@@ -59,7 +91,6 @@ const PROJECTS = [
               <span
                 class={`flex gap-x-2 rounded-full text-xs ${tag.class} py-1 px-2 `}
               >
-                <tag.icon class="size-4" />
                 {tag.name}
               </span>
             </li>
@@ -71,11 +102,10 @@ const PROJECTS = [
           {github && (
             <LinkButton href={github}>
               <GitHub class="size-6" />
-              Code
-              
+              GitHub
             </LinkButton>
           )}
-          {link && (
+          {link && !github && (
             <LinkButton href={link}>
               <Link class="size-4" />
               Preview
@@ -88,6 +118,3 @@ const PROJECTS = [
     ))
   }
 </div>
-
-
-
