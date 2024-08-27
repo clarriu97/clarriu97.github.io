@@ -1,2 +1,3 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
+Allow: /
+Sitemap: https://clarriu97.github.io/sitemap-index.xml
