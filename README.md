@@ -3,6 +3,26 @@ Clonado y adaptado de [midudev/porfolio.dev](https://github.com/midudev/porfolio
 
 Versión desplegada disponible en https://clarriu97.github.io/
 
+# Desarrollo local
+
+- Instalar dependencias:
+
+  ```bash
+  npm install
+  ```
+
+- Iniciar servidor de desarrollo:
+
+  ```bash
+  npm run start
+  ```
+
+- Construir aplicación:
+
+  ```bash
+  npm run build
+  ```
+
 # 👨🏻‍💻 Porfolio para programadores y desarrolladores
 
 <div align="center">
