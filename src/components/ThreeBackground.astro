@@ -1,0 +1,84 @@
+<div id="three-container" class="fixed inset-0 z-[-1] pointer-events-none"></div>
+
+<script>
+  import * as THREE from "three";
+
+  const container = document.getElementById("three-container");
+
+  if (container) {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // Particles
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 700;
+
+    const posArray = new Float32Array(particlesCount * 3);
+
+    for (let i = 0; i < particlesCount; i++) {
+      posArray[i * 3] = (Math.random() - 0.5) * 15; // X
+      posArray[i * 3 + 1] = (Math.random() - 0.5) * 15; // Y
+      posArray[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2; // Z: -7 to -2 (away from camera at 3)
+    }
+
+    particlesGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(posArray, 3)
+    );
+
+    // Material
+    const material = new THREE.PointsMaterial({
+      size: 0.015, // Slightly smaller
+      color: 0x00f3ff, // Neon blue
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    // Mesh
+    const particlesMesh = new THREE.Points(particlesGeometry, material);
+    scene.add(particlesMesh);
+
+    camera.position.z = 3;
+
+    // Mouse interaction
+    let mouseX = 0;
+    let mouseY = 0;
+
+    document.addEventListener("mousemove", (event) => {
+      mouseX = event.clientX / window.innerWidth - 0.5;
+      mouseY = event.clientY / window.innerHeight - 0.5;
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+
+    const animate = () => {
+      const elapsedTime = clock.getElapsedTime();
+
+      particlesMesh.rotation.y = elapsedTime * 0.05;
+      particlesMesh.rotation.x = mouseY * 0.5;
+      particlesMesh.rotation.y += mouseX * 0.5;
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    // Resize
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+</script>

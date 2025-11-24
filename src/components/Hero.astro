@@ -25,8 +25,27 @@ import SocialPill from "@/components/SocialPill.astro"
   <h1
     class="text-4xl font-bold tracking-tight text-gray-800 sm:text-5xl dark:text-white"
   >
-    Hello World, I'm Carlos
+    Hello World, I'm <span class="text-neon-blue typing-effect">Carlos</span>
   </h1>
+
+<style>
+  .typing-effect {
+    border-right: 2px solid;
+    white-space: nowrap;
+    overflow: hidden;
+    animation: typing 3s steps(6, end), blink-caret .75s step-end infinite;
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  @keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: #00f3ff; }
+  }
+</style>
   <p
     class="mt-6 text-xl text-gray-800 dark:[&>strong]:text-yellow-200 [&>strong]:text-yellow-500 [&>strong]:font-semibold dark:text-gray-300"
   >
