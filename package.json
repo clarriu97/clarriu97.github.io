@@ -3,9 +3,15 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "preinstall": "node scripts/preinstall.js",
     "start": "astro dev",
     "build": "astro check && astro build"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.23.0",
   "dependencies": {
     "@astrojs/check": "0.5.6",
     "@astrojs/tailwind": "5.1.0",

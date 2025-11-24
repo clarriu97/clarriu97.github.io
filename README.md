@@ -5,22 +5,30 @@ Versión desplegada disponible en https://clarriu97.github.io/
 
 # Desarrollo local
 
+⚠️ **Este proyecto usa pnpm como gestor de paquetes**
+
+- Instalar pnpm (si no lo tienes):
+
+  ```bash
+  npm install -g pnpm
+  ```
+
 - Instalar dependencias:
 
   ```bash
-  npm install
+  pnpm install
   ```
 
 - Iniciar servidor de desarrollo:
 
   ```bash
-  npm run start
+  pnpm start
   ```
 
 - Construir aplicación:
 
   ```bash
-  npm run build
+  pnpm build
   ```
 
 # 👨🏻‍💻 Porfolio para programadores y desarrolladores

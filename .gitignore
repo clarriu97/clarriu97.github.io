@@ -1,2 +1,22 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# Package manager files (solo pnpm permitido)
+package-lock.json
+yarn.lock
+.yarn/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
