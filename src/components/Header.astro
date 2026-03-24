@@ -29,12 +29,13 @@ const navItems = [
   class="fixed top-0 z-10 flex items-center justify-center w-full mx-auto mt-2"
 >
   <nav
-    class="flex px-3 text-sm font-medium rounded-full text-gray-600 dark:text-gray-200 justify-center items-center"
+    id="header-nav"
+    class="flex items-center justify-center px-3 text-sm font-medium rounded-full text-[var(--muted)]"
   >
     {
       navItems.map((link) => (
         <a
-          class="relative block px-2 py-2 transition hover:text-neon-blue"
+          class="relative block px-2 py-2 transition-colors duration-200 hover:text-[var(--text)]"
           aria-label={link.label}
           href={link.url}
         >
@@ -56,9 +57,9 @@ const navItems = [
         if (entry.isIntersecting) {
           navItems.forEach((item) => {
             if (item.getAttribute("aria-label") == entry.target.id) {
-              item.classList.add("text-neon-blue")
+              item.classList.add("active-link")
             } else {
-              item.classList.remove("text-neon-blue")
+              item.classList.remove("active-link")
             }
           })
         }
@@ -90,21 +91,29 @@ const navItems = [
 
 <style>
   nav {
-    animation: nav-shadown 1s linear both;
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    animation: nav-shadow 1s linear both;
     animation-timeline: scroll();
     animation-range: 0 100px;
   }
 
-  nav {
-    @apply bg-black/50 border border-white/10;
+  a.active-link {
+    color: var(--accent);
   }
 
-  @keyframes nav-shadown {
+  @keyframes nav-shadow {
     0% {
-      @apply bg-black/0 border-transparent;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
     }
     to {
-      @apply shadow-lg backdrop-blur-md bg-black/50 border-neon-blue/30 shadow-neon-blue/20;
+      background: color-mix(in srgb, var(--surface) 70%, transparent);
+      border-color: var(--border);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
     }
   }
 </style>

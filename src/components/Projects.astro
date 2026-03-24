@@ -6,39 +6,43 @@ import LinkButton from "./LinkButton.astro"
 const TAGS = {
   PYTHON: {
     name: "Python",
-    class: "bg-blue-500 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   DYNACONF: {
     name: "Dynaconf",
-    class: "bg-gray-700 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   GITHUB_ACTIONS: {
     name: "GitHub Actions",
-    class: "bg-gray-800 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   PYDANTIC: {
     name: "Pydantic",
-    class: "bg-green-500 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   MKDOCS: {
     name: "MkDocs",
-    class: "bg-yellow-500 text-black",
-  },
-  PUBLIC_SPEAKING: {
-    name: "Public Speaking",
-    class: "bg-red-500 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   AI: {
     name: "AI",
-    class: "bg-purple-600 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   PHP: {
     name: "PHP",
-    class: "bg-blue-800 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
   DATABASES: {
     name: "Databases",
-    class: "bg-orange-500 text-white",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
+  },
+  OPEN_METEO: {
+    name: "Open-Meteo",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
+  },
+  CLI: {
+    name: "CLI",
+    class: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
   },
 }
 
@@ -52,12 +56,12 @@ const PROJECTS = [
     tags: [TAGS.PYTHON, TAGS.DYNACONF, TAGS.GITHUB_ACTIONS, TAGS.PYDANTIC, TAGS.MKDOCS],
   },
   {
-    title: "TERTULia",
+    title: "weather-tty",
     description:
-      "Panelist in a podcast discussing AI and software development. Engaging in deep conversations about the latest trends in technology.",
-    link: "https://ironbar.github.io/tertulia_inteligencia_artificial/",
-    image: "/projects/tertulia.webp",
-    tags: [TAGS.PUBLIC_SPEAKING, TAGS.AI],
+      "Tiny CLI to print today's weather in your terminal using Open-Meteo, with zero API keys and a clean developer-friendly UX.",
+    github: "https://github.com/clarriu97/weather-tty",
+    image: "/projects/weather-tty.webp",
+    tags: [TAGS.PYTHON, TAGS.OPEN_METEO, TAGS.CLI, TAGS.AI],
   },
   {
     title: "Bachelor's Thesis - Medical Open World",
@@ -75,13 +79,13 @@ const PROJECTS = [
     PROJECTS.map(({ image, title, description, tags, link, github }) => (
     <article class="flex flex-col space-x-0 space-y-8 group md:flex-row md:space-x-8 md:space-y-0">
   <div class="w-full md:w-1/2">
-    <div class="relative flex flex-col items-center col-span-6 row-span-5 gap-8 transition duration-500 ease-in-out transform shadow-xl overflow-clip rounded-xl sm:rounded-xl md:group-hover:-translate-y-1 md:group-hover:shadow-2xl lg:border lg:border-gray-800 lg:hover:border-neon-blue/50 lg:hover:bg-gray-800/50 lg:hover:shadow-neon-blue/20">
+    <div class="relative flex flex-col items-center col-span-6 row-span-5 gap-8 transition duration-300 ease-in-out transform overflow-clip rounded-xl border border-[var(--border)] bg-[var(--surface)] md:group-hover:-translate-y-1 md:group-hover:border-[var(--accent-soft)] md:group-hover:shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
       <img alt={title} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" src={image} />
     </div>
   </div>
 
   <div class="w-full md:w-1/2 md:max-w-lg">
-    <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+    <h3 class="text-2xl font-semibold text-[var(--text)]">
       {title}
     </h3>
     <div class="flex flex-wrap mt-2">
@@ -97,7 +101,7 @@ const PROJECTS = [
           ))}
         </ul>
 
-      <div class="mt-2 text-gray-700 dark:text-gray-400">{description}</div>
+      <div class="mt-2 text-[var(--muted)]">{description}</div>
       <footer class="flex items-end justify-start mt-4 gap-x-4">
           {github && (
             <LinkButton href={github}>

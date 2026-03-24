@@ -2,9 +2,9 @@
  const personalImageAlt = "Carlos"
 ---
 
-<article class="flex flex-col items-center justify-center gap-8 text-gray-700 dark:text-gray-300 md:flex-row">
+<article class="flex flex-col items-center justify-center gap-8 text-[var(--muted)] md:flex-row">
   <div
-    class="[&>p]:mb-4 [&>p>strong]:text-yellow-500 dark:[&>p>strong]:text-yellow-100 [&>p>strong]:font-normal [&>p>strong]:font-mono text-pretty order-2 md:order-1"
+    class="[&>p]:mb-4 [&>p>strong]:text-[var(--text)] [&>p>strong]:font-normal [&>p>strong]:font-mono text-pretty order-2 md:order-1"
   >
     <p>
       My name is Carlos. I started <strong>programming back in school with Pascal</strong>, 
@@ -15,12 +15,11 @@
     </p>
 
     <p>
-      Currently, I'm a Software Engineer at Veridas. My work involves <strong>designing, 
-      developing, and maintaining microservices and solutions based on Artificial 
-      Intelligence</strong>, specifically in the field of voice biometrics. Additionally, I 
-      have a strong <strong>DevOps</strong> focus, working extensively on CI/CD processes, 
-      GitLab pipelines, software architecture, quality, and testing. I specialize in backend 
-      development with <strong>Python, Flask, FastAPI, Gunicorn, and Docker</strong>.
+      Today, I work as an AI Backend Engineer, focused on <strong>designing, developing, 
+      and maintaining backend services and AI-powered solutions</strong> for web platforms. 
+      I also keep a strong <strong>DevOps</strong> mindset, working on CI/CD processes, 
+      software architecture, quality, and testing. I specialize in backend development with 
+      <strong>Python, Flask, FastAPI, Gunicorn, and Docker</strong>.
     </p>
 
     <p>
@@ -29,7 +28,7 @@
     </p>
   </div>
 
-  <img width="200" height="200" src="/me.png" alt={personalImageAlt} class="order-1 object-cover w-64 h-full p-1 md:order-2 rotate-3 lg:p-2 lg:w-64 aspect-square rounded-2xl bg-black/20 dark:bg-yellow-500/5 ring-1 ring-black/70 dark:ring-white/20 " style="object-position: 50% 50%">
+  <img width="200" height="200" src="/me.png" alt={personalImageAlt} class="order-1 object-cover w-64 h-full p-1 md:order-2 rotate-3 lg:p-2 lg:w-64 aspect-square rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--border)]" style="object-position: 50% 50%">
 
 </article>
 

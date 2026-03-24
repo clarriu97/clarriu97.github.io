@@ -6,10 +6,10 @@ import MailIcon from "@/components/icons/Mail.astro"
 import SocialPill from "@/components/SocialPill.astro"
 ---
 
-<div class="max-w-xl">
+<div class="max-w-2xl">
   <div class="flex gap-4 mb-4">
     <img
-      class="rounded-full shadow-lg size-16"
+      class="rounded-full ring-1 ring-[var(--border)] size-16"
       src="/clarriu.webp"
       alt={personalImageAlt}
     />
@@ -23,41 +23,91 @@ import SocialPill from "@/components/SocialPill.astro"
     </a>
   </div>
   <h1
-    class="text-4xl font-bold tracking-tight text-gray-800 sm:text-5xl dark:text-white"
+    class="text-4xl font-semibold tracking-tight sm:text-5xl text-[var(--text)]"
   >
-    Hello World, I'm <span class="text-neon-blue typing-effect">Carlos</span>
+    <span id="typing-text" aria-label="Hello World, I'm Carlos"></span><span class="typing-cursor" aria-hidden="true"></span>
   </h1>
 
 <style>
-  .typing-effect {
-    border-right: 2px solid;
-    white-space: nowrap;
-    overflow: hidden;
-    animation: typing 3s steps(6, end), blink-caret .75s step-end infinite;
-  }
-
-  @keyframes typing {
-    from { width: 0 }
-    to { width: 100% }
+  .typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    margin-left: 0.08em;
+    vertical-align: -0.12em;
+    background-color: var(--accent);
+    animation: blink-caret 0.75s step-end infinite;
   }
 
   @keyframes blink-caret {
-    from, to { border-color: transparent }
-    50% { border-color: #00f3ff; }
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
   }
 </style>
+  <script>
+    let typingInterval = null;
+    let typingTimeout = null;
+
+    const initTypingEffect = () => {
+      const textNode = document.getElementById("typing-text");
+      if (!textNode) return;
+
+      if (typingInterval) clearInterval(typingInterval);
+      if (typingTimeout) clearTimeout(typingTimeout);
+
+      const phrase = "Hello World, I'm Carlos";
+      let index = 0;
+      let deleting = false;
+
+      const step = () => {
+        textNode.textContent = phrase.slice(0, index);
+
+        if (!deleting && index < phrase.length) {
+          index += 1;
+          return;
+        }
+
+        if (!deleting && index === phrase.length) {
+          deleting = true;
+          clearInterval(typingInterval);
+          typingTimeout = setTimeout(() => {
+            typingInterval = setInterval(step, 55);
+          }, 3000);
+          return;
+        }
+
+        if (deleting && index > 0) {
+          index -= 1;
+          return;
+        }
+
+        if (deleting && index === 0) {
+          deleting = false;
+          clearInterval(typingInterval);
+          typingTimeout = setTimeout(() => {
+            typingInterval = setInterval(step, 95);
+          }, 450);
+        }
+      };
+
+      typingInterval = setInterval(step, 95);
+      step();
+    };
+
+    document.addEventListener("astro:page-load", initTypingEffect);
+  </script>
   <p
-    class="mt-6 text-xl text-gray-800 dark:[&>strong]:text-yellow-200 [&>strong]:text-yellow-500 [&>strong]:font-semibold dark:text-gray-300"
+    class="mt-6 text-xl text-[var(--muted)] [&>strong]:text-[var(--text)] [&>strong]:font-semibold"
   >
     Building robust backend systems and evolving DevOps processes, with AI as a constant source of inspiration.
   </p>
   <p
-    class="mt-6 text-xl text-gray-800 dark:[&>strong]:text-yellow-200 [&>strong]:text-yellow-500 [&>strong]:font-semibold dark:text-gray-300"
+    class="mt-6 text-xl text-[var(--muted)] [&>strong]:text-[var(--text)] [&>strong]:font-semibold"
   >
     <strong>Software Engineer</strong> from Pamplona, Spain 🇪🇸.
   </p>
   <p
-    class="mt-6 text-xl text-gray-800 dark:[&>strong]:text-yellow-200 [&>strong]:text-yellow-500 [&>strong]:font-semibold dark:text-gray-300"
+    class="mt-6 text-xl text-[var(--muted)] [&>strong]:text-[var(--text)] [&>strong]:font-semibold"
   >
     Specializing in building reliable, scalable, and efficient digital infrastructures.
   </p>
