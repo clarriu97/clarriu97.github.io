@@ -53,6 +53,8 @@ const PROJECTS = [
       "Python interface to consume Veridas APIs. Includes advanced configuration management and automated workflows.",
     github: "https://github.com/clarriu97/vericlient",
     image: "/projects/vericlient.webp",
+    imageWidth: 960,
+    imageHeight: 720,
     tags: [TAGS.PYTHON, TAGS.DYNACONF, TAGS.GITHUB_ACTIONS, TAGS.PYDANTIC, TAGS.MKDOCS],
   },
   {
@@ -61,6 +63,8 @@ const PROJECTS = [
       "Tiny CLI to print today's weather in your terminal using Open-Meteo, with zero API keys and a clean developer-friendly UX.",
     github: "https://github.com/clarriu97/weather-tty",
     image: "/projects/weather-tty.webp",
+    imageWidth: 840,
+    imageHeight: 513,
     tags: [TAGS.PYTHON, TAGS.OPEN_METEO, TAGS.CLI, TAGS.AI],
   },
   {
@@ -69,6 +73,8 @@ const PROJECTS = [
       "Developed a full-stack Android app for an NGO to monitor incubators. The app allows medical staff to track the health of babies and manage the incubators remotely.",
     link: "https://medicalopenworld.org/",
     image: "/projects/medical_open_world.webp",
+    imageWidth: 960,
+    imageHeight: 720,
     tags: [TAGS.PHP, TAGS.DATABASES],
   },
 ]
@@ -76,11 +82,11 @@ const PROJECTS = [
 
 <div class="flex flex-col gap-y-16">
   {
-    PROJECTS.map(({ image, title, description, tags, link, github }) => (
+    PROJECTS.map(({ image, imageWidth, imageHeight, title, description, tags, link, github }) => (
     <article class="flex flex-col space-x-0 space-y-8 group md:flex-row md:space-x-8 md:space-y-0">
   <div class="w-full md:w-1/2">
     <div class="relative flex flex-col items-center col-span-6 row-span-5 gap-8 transition duration-300 ease-in-out transform overflow-clip rounded-xl border border-[var(--border)] bg-[var(--surface)] md:group-hover:-translate-y-1 md:group-hover:border-[var(--accent-soft)] md:group-hover:shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-      <img alt={title} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" src={image} />
+      <img alt={title} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" decoding="async" width={imageWidth} height={imageHeight} src={image} />
     </div>
   </div>
 
