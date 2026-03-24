@@ -45,15 +45,15 @@ import SocialPill from "@/components/SocialPill.astro"
   }
 </style>
   <script>
-    let typingInterval = null;
-    let typingTimeout = null;
+    let typingInterval: ReturnType<typeof window.setInterval> | null = null;
+    let typingTimeout: ReturnType<typeof window.setTimeout> | null = null;
 
     const initTypingEffect = () => {
       const textNode = document.getElementById("typing-text");
       if (!textNode) return;
 
-      if (typingInterval) clearInterval(typingInterval);
-      if (typingTimeout) clearTimeout(typingTimeout);
+      if (typingInterval !== null) window.clearInterval(typingInterval);
+      if (typingTimeout !== null) window.clearTimeout(typingTimeout);
 
       const phrase = "Hello World, I'm Carlos";
       let index = 0;
@@ -69,10 +69,10 @@ import SocialPill from "@/components/SocialPill.astro"
 
         if (!deleting && index === phrase.length) {
           deleting = true;
-          clearInterval(typingInterval);
-          typingTimeout = setTimeout(() => {
-            typingInterval = setInterval(step, 55);
-          }, 3000);
+          if (typingInterval !== null) window.clearInterval(typingInterval);
+          typingTimeout = window.setTimeout(() => {
+            typingInterval = window.setInterval(step, 55);
+          }, 5000);
           return;
         }
 
@@ -83,14 +83,14 @@ import SocialPill from "@/components/SocialPill.astro"
 
         if (deleting && index === 0) {
           deleting = false;
-          clearInterval(typingInterval);
-          typingTimeout = setTimeout(() => {
-            typingInterval = setInterval(step, 95);
+          if (typingInterval !== null) window.clearInterval(typingInterval);
+          typingTimeout = window.setTimeout(() => {
+            typingInterval = window.setInterval(step, 95);
           }, 450);
         }
       };
 
-      typingInterval = setInterval(step, 95);
+      typingInterval = window.setInterval(step, 95);
       step();
     };
 
@@ -104,7 +104,7 @@ import SocialPill from "@/components/SocialPill.astro"
   <p
     class="mt-6 text-xl text-[var(--muted)] [&>strong]:text-[var(--text)] [&>strong]:font-semibold"
   >
-    <strong>Software Engineer</strong> from Pamplona, Spain 🇪🇸.
+    <strong>Software Engineer</strong> from Pamplona 🇪🇸 currently based in Dubai 🇦🇪
   </p>
   <p
     class="mt-6 text-xl text-[var(--muted)] [&>strong]:text-[var(--text)] [&>strong]:font-semibold"
