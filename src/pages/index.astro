@@ -10,12 +10,33 @@ import Projects from "@/components/Projects.astro"
 import SectionContainer from "@/components/SectionContainer.astro"
 import Hero from "@/components/Hero.astro"
 import TitleSection from "@/components/TitleSection.astro"
+
+const personStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Carlos Larriu",
+  url: "https://larri.dev/",
+  jobTitle: "Software Engineer and DevOps Engineer",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Dubai",
+    addressCountry: "AE",
+  },
+  sameAs: [
+    "https://linkedin.com/in/carloslarriu",
+    "https://github.com/clarriu97",
+  ],
+}
 ---
 
 <Layout
-  title="Portfolio of Carlos - Software and DevOps Engineer with 3 years of experience"
-  description="Hire Carlos to build your backend systems or manage DevOps processes. Specialized in creating reliable and scalable digital solutions."
+  title="Carlos Larriu | Software Engineer and DevOps Engineer"
+  description="Carlos Larriu's portfolio: backend engineering, DevOps automation, and scalable software projects."
+  image="/og-image.svg"
 >
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(personStructuredData)} />
+  </Fragment>
   <main class="px-4">
     <SectionContainer class="py-16 md:py-36">
       <Hero>
@@ -26,7 +47,7 @@ import TitleSection from "@/components/TitleSection.astro"
     <SectionContainer id="experience">
       <TitleSection>
         <Briefcase class="size-8" />
-        Experiencie
+        Experience
       </TitleSection>
       <Experience />
     </SectionContainer>
@@ -42,7 +63,7 @@ import TitleSection from "@/components/TitleSection.astro"
     <SectionContainer id="about-me">
       <TitleSection>
         <ProfileCheck class="size-8" />
-        About me
+        About
       </TitleSection>
       <AboutMe />
     </SectionContainer>
