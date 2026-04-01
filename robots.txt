@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://clarriu97.github.io/sitemap-index.xml
+
+Sitemap: https://larri.dev/sitemap.xml
