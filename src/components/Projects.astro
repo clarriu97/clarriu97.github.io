@@ -55,6 +55,7 @@ const PROJECTS = [
     image: "/projects/vericlient.webp",
     imageWidth: 960,
     imageHeight: 720,
+    imageAlt: "Vericlient Python library for Veridas APIs",
     tags: [TAGS.PYTHON, TAGS.DYNACONF, TAGS.GITHUB_ACTIONS, TAGS.PYDANTIC, TAGS.MKDOCS],
   },
   {
@@ -65,6 +66,7 @@ const PROJECTS = [
     image: "/projects/weather-tty.webp",
     imageWidth: 840,
     imageHeight: 513,
+    imageAlt: "weather-tty CLI tool displaying weather in terminal",
     tags: [TAGS.PYTHON, TAGS.OPEN_METEO, TAGS.CLI, TAGS.AI],
   },
   {
@@ -75,6 +77,7 @@ const PROJECTS = [
     image: "/projects/medical_open_world.webp",
     imageWidth: 960,
     imageHeight: 720,
+    imageAlt: "Medical Open World Android app for incubator monitoring",
     tags: [TAGS.PHP, TAGS.DATABASES],
   },
 ]
@@ -82,11 +85,11 @@ const PROJECTS = [
 
 <div class="flex flex-col gap-y-16">
   {
-    PROJECTS.map(({ image, imageWidth, imageHeight, title, description, tags, link, github }) => (
+    PROJECTS.map(({ image, imageWidth, imageHeight, imageAlt, title, description, tags, link, github }) => (
     <article class="flex flex-col space-x-0 space-y-8 group md:flex-row md:space-x-8 md:space-y-0">
   <div class="w-full md:w-1/2">
     <div class="relative flex flex-col items-center col-span-6 row-span-5 gap-8 transition duration-300 ease-in-out transform overflow-clip rounded-xl border border-[var(--border)] bg-[var(--surface)] md:group-hover:-translate-y-1 md:group-hover:border-[var(--accent-soft)] md:group-hover:shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-      <img alt={title} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" decoding="async" width={imageWidth} height={imageHeight} src={image} />
+      <img alt={imageAlt} class="object-cover object-top w-full h-56 transition duration-500 sm:h-full md:scale-110 md:group-hover:scale-105" loading="lazy" decoding="async" width={imageWidth} height={imageHeight} src={image} />
     </div>
   </div>
 
