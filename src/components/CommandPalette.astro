@@ -1,0 +1,470 @@
+---
+import Home from "./icons/Home.astro"
+import Briefcase from "./icons/Briefcase.astro"
+import CodeIcon from "./icons/Code.astro"
+import ProfileCheck from "./icons/ProfileCheck.astro"
+import Mail from "./icons/Mail.astro"
+import GitHub from "./icons/GitHub.astro"
+import LinkedIn from "./icons/LinkedIn.astro"
+import SunIcon from "./icons/Sun.astro"
+import MoonIcon from "./icons/Moon.astro"
+import SystemIcon from "./icons/System.astro"
+
+const navCommands = [
+  { label: "Home", value: "/", keywords: "home start top intro", Icon: Home, action: "nav" },
+  { label: "Experience", value: "/#experience", keywords: "experience work jobs career roles", Icon: Briefcase, action: "nav" },
+  { label: "Projects", value: "/#projects", keywords: "projects portfolio code repos work", Icon: CodeIcon, action: "nav" },
+  { label: "About", value: "/#about-me", keywords: "about me bio story", Icon: ProfileCheck, action: "nav" },
+]
+
+const socialCommands = [
+  { label: "Email Carlos", value: "mailto:larriucarlos@gmail.com", keywords: "email contact mail reach write", Icon: Mail, action: "mail", hint: "↗" },
+  { label: "GitHub", value: "https://github.com/clarriu97", keywords: "github code repositories source open", Icon: GitHub, action: "external", hint: "↗" },
+  { label: "LinkedIn", value: "https://linkedin.com/in/carloslarriu", keywords: "linkedin profile network connect", Icon: LinkedIn, action: "external", hint: "↗" },
+]
+
+const themeCommands = [
+  { label: "Theme: Light", value: "light", keywords: "theme light mode appearance bright", Icon: SunIcon, action: "theme" },
+  { label: "Theme: Dark", value: "dark", keywords: "theme dark mode appearance night", Icon: MoonIcon, action: "theme" },
+  { label: "Theme: System", value: "system", keywords: "theme system mode appearance auto", Icon: SystemIcon, action: "theme" },
+]
+
+const groups = [
+  { id: "nav", title: "Navigation", items: navCommands },
+  { id: "social", title: "Connect", items: socialCommands },
+  { id: "theme", title: "Theme", items: themeCommands },
+].filter((group) => group.items.length > 0)
+---
+
+<div
+  id="command-palette"
+  class="cmdk-overlay"
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-label="Command palette"
+>
+  <div class="cmdk-panel">
+    <div class="cmdk-input-row">
+      <span class="cmdk-prompt" aria-hidden="true">&#10095;</span>
+      <input
+        id="cmdk-input"
+        class="cmdk-input font-mono"
+        type="text"
+        placeholder="Type a command or search…"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Search commands"
+      />
+      <span class="cmdk-esc" aria-hidden="true">esc</span>
+    </div>
+
+    <div id="cmdk-list" class="cmdk-list" role="listbox" aria-label="Commands">
+      {
+        groups.map((group) => (
+          <div class="cmdk-group" data-group-wrap={group.id}>
+            <div class="cmdk-group-title">{group.title}</div>
+            {group.items.map((cmd) => {
+              const Icon = cmd.Icon
+              return (
+                <button
+                  class="cmdk-item"
+                  type="button"
+                  role="option"
+                  data-cmd={cmd.action}
+                  data-value={cmd.value}
+                  data-group={group.id}
+                  data-keywords={`${cmd.label} ${cmd.keywords}`.toLowerCase()}
+                >
+                  <Icon class="cmdk-icon" />
+                  <span class="cmdk-label">{cmd.label}</span>
+                  {"hint" in cmd && cmd.hint && (
+                    <span class="cmdk-hint" aria-hidden="true">
+                      {cmd.hint}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        ))
+      }
+      <div id="cmdk-empty" class="cmdk-empty" hidden>No results found.</div>
+    </div>
+
+    <div class="cmdk-footer" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> select</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<button
+  id="cmdk-launcher"
+  class="cmdk-launcher"
+  type="button"
+  aria-label="Open command palette"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    stroke-width="2"
+    stroke="currentColor"
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+    <path d="M21 21l-6 -6"></path>
+  </svg>
+  <kbd id="cmdk-kbd">⌘K</kbd>
+</button>
+
+<style>
+  .cmdk-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 14vh 1rem 1rem;
+    background: rgba(2, 6, 12, 0.5);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .cmdk-overlay[hidden] {
+    display: none;
+  }
+
+  .cmdk-panel {
+    width: 100%;
+    max-width: 640px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    animation: cmdk-in 0.16s ease-out;
+  }
+
+  @keyframes cmdk-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .cmdk-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmdk-prompt {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .cmdk-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .cmdk-input::placeholder {
+    color: var(--muted);
+  }
+  .cmdk-esc {
+    font-size: 0.7rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .cmdk-list {
+    max-height: 56vh;
+    overflow-y: auto;
+    padding: 0.4rem;
+  }
+  .cmdk-group-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 0.6rem 0.7rem 0.3rem;
+  }
+  .cmdk-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.55rem 0.7rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .cmdk-item[data-active] {
+    background: var(--surface-2);
+  }
+  .cmdk-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .cmdk-item[data-active] .cmdk-icon {
+    color: var(--accent);
+  }
+  .cmdk-label {
+    flex: 1;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cmdk-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .cmdk-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .cmdk-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 0.55rem 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .cmdk-footer kbd,
+  .cmdk-launcher kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .cmdk-launcher {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .cmdk-launcher:hover {
+    color: var(--text);
+    border-color: var(--accent-soft);
+    transform: translateY(-1px);
+  }
+  .cmdk-launcher kbd {
+    font-size: 0.72rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+    color: var(--text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmdk-panel {
+      animation: none;
+    }
+    .cmdk-launcher {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  type Controller = {
+    open: () => void
+    close: () => void
+    toggle: () => void
+  }
+
+  let controller: Controller | null = null
+
+  // Bound once for the page lifetime; references the current palette instance.
+  document.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault()
+      controller?.toggle()
+    }
+  })
+
+  const initCommandPalette = () => {
+    const overlay = document.getElementById("command-palette")
+    const launcher = document.getElementById("cmdk-launcher")
+    if (!overlay) return
+
+    const input = overlay.querySelector<HTMLInputElement>("#cmdk-input")
+    const list = overlay.querySelector<HTMLElement>("#cmdk-list")
+    const emptyEl = overlay.querySelector<HTMLElement>("#cmdk-empty")
+    if (!input || !list || !emptyEl) return
+
+    const items = Array.from(
+      list.querySelectorAll<HTMLElement>(".cmdk-item")
+    )
+    const groups = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-group-wrap]")
+    )
+
+    let activeIndex = 0
+    const visible = () => items.filter((item) => !item.hidden)
+
+    const paintActive = () => {
+      const vis = visible()
+      items.forEach((item) => item.removeAttribute("data-active"))
+      if (!vis.length) return
+      activeIndex = Math.max(0, Math.min(activeIndex, vis.length - 1))
+      const el = vis[activeIndex]
+      el.setAttribute("data-active", "")
+      el.scrollIntoView({ block: "nearest" })
+    }
+
+    const applyFilter = () => {
+      const query = input.value.trim().toLowerCase()
+      items.forEach((item) => {
+        item.hidden =
+          query !== "" && !(item.dataset.keywords || "").includes(query)
+      })
+      groups.forEach((group) => {
+        const id = group.dataset.groupWrap
+        const any = items.some(
+          (item) => item.dataset.group === id && !item.hidden
+        )
+        group.hidden = !any
+      })
+      emptyEl.hidden = visible().length > 0
+      activeIndex = 0
+      paintActive()
+    }
+
+    const move = (delta: number) => {
+      const n = visible().length
+      if (!n) return
+      activeIndex = (activeIndex + delta + n) % n
+      paintActive()
+    }
+
+    const isOpen = () => !overlay.hasAttribute("hidden")
+
+    const open = () => {
+      overlay.removeAttribute("hidden")
+      document.body.style.overflow = "hidden"
+      input.value = ""
+      applyFilter()
+      requestAnimationFrame(() => input.focus())
+    }
+
+    const close = () => {
+      overlay.setAttribute("hidden", "")
+      document.body.style.overflow = ""
+    }
+
+    const setTheme = (theme: string) => {
+      localStorage.setItem("theme", theme)
+      const mql = window.matchMedia("(prefers-color-scheme: dark)")
+      const dark = theme === "dark" || (theme === "system" && mql.matches)
+      document.documentElement.classList.toggle("dark", dark)
+      document
+        .querySelectorAll<HTMLElement>(".theme-toggle-icon")
+        .forEach((el) => {
+          el.style.scale = el.id === theme ? "1" : "0"
+        })
+    }
+
+    const run = (el: HTMLElement) => {
+      const action = el.dataset.cmd
+      const value = el.dataset.value || ""
+      close()
+      if (action === "external") {
+        window.open(value, "_blank", "noopener,noreferrer")
+      } else if (action === "theme") {
+        setTheme(value)
+      } else {
+        // nav + mail both navigate the current document
+        window.location.href = value
+      }
+    }
+
+    input.addEventListener("input", applyFilter)
+
+    overlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        close()
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault()
+        move(1)
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault()
+        move(-1)
+      } else if (event.key === "Enter") {
+        event.preventDefault()
+        const el = visible()[activeIndex]
+        if (el) run(el)
+      }
+    })
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) close()
+    })
+
+    items.forEach((item) => {
+      item.addEventListener("click", () => run(item))
+      item.addEventListener("mousemove", () => {
+        const idx = visible().indexOf(item)
+        if (idx >= 0 && idx !== activeIndex) {
+          activeIndex = idx
+          paintActive()
+        }
+      })
+    })
+
+    launcher?.addEventListener("click", open)
+
+    const kbd = document.getElementById("cmdk-kbd")
+    if (kbd && !/Mac|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      kbd.textContent = "Ctrl K"
+    }
+
+    controller = { open, close, toggle: () => (isOpen() ? close() : open()) }
+  }
+
+  document.addEventListener("astro:page-load", initCommandPalette)
+</script>
