@@ -1,9 +1,15 @@
 ---
-const { href } = Astro.props;
+interface Props {
+  href: string
+  external?: boolean
+}
+
+const { href, external = true } = Astro.props
 ---
 
 <a
-    target="_blank"
+    target={external ? "_blank" : undefined}
+    rel={external ? "noopener noreferrer" : undefined}
     href={href}
     role="link"
     class="inline-flex items-center justify-center gap-2 px-3 py-2 space-x-2 text-base transition-colors border text-md text-[var(--text)] bg-[var(--surface)] border-[var(--border)] hover:bg-[var(--surface-2)] hover:border-[var(--accent-soft)] group max-w-fit rounded-xl focus:outline-none focus-visible:outline-none focus-visible:ring focus-visible:ring-[var(--accent)]/40 focus-visible:ring-offset-2"
