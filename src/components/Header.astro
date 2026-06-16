@@ -3,6 +3,11 @@ import ThemeToggle from "./ThemeToggle.astro"
 
 const navItems = [
   {
+    title: "Home",
+    label: "home",
+    url: "/",
+  },
+  {
     title: "Experience",
     label: "experience",
     url: "/#experience",
@@ -30,7 +35,7 @@ const navItems = [
 >
   <nav
     id="header-nav"
-    class="flex items-center justify-center px-3 text-sm font-medium rounded-full text-[var(--muted)]"
+    class="flex flex-wrap items-center justify-center gap-x-0 gap-y-1 px-3 text-sm font-medium rounded-full text-[var(--muted)] max-w-[min(100vw-1rem,42rem)]"
   >
     {
       navItems.map((link) => (
@@ -48,44 +53,20 @@ const navItems = [
 </header>
 
 <script>
+  import { initHeaderScrollSpy } from "@/lib/headerScrollSpy"
+
+  let scrollSpyCleanup: (() => void) | null = null
+
   document.addEventListener("astro:page-load", () => {
-    const sections = document.querySelectorAll("section")
-    const navItems = document.querySelectorAll("header nav a")
-
-    const callback = (entries: any[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          navItems.forEach((item) => {
-            if (item.getAttribute("aria-label") == entry.target.id) {
-              item.classList.add("active-link")
-            } else {
-              item.classList.remove("active-link")
-            }
-          })
-        }
-      })
+    if (scrollSpyCleanup) {
+      scrollSpyCleanup()
+      scrollSpyCleanup = null
     }
 
-    const observer = new IntersectionObserver(callback, {
-      root: null,
-      rootMargin: "0px",
-      threshold: 0.3,
-    })
+    const path = window.location.pathname
+    if (path !== "/" && path !== "") return
 
-    sections.forEach((section) => {
-      observer.observe(section)
-    })
-
-    // Cleanup function
-    document.onvisibilitychange = () => {
-      if (document.visibilityState === "hidden") {
-        observer.disconnect()
-      } else {
-        sections.forEach((section) => {
-          observer.observe(section)
-        })
-      }
-    }
+    scrollSpyCleanup = initHeaderScrollSpy()
   })
 </script>
 
