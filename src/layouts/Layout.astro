@@ -4,6 +4,8 @@ import "@fontsource-variable/onest"
 import Header from "../components/Header.astro"
 import Footer from "../components/Footer.astro"
 import ThreeBackground from "../components/ThreeBackground.astro"
+import CommandPalette from "../components/CommandPalette.astro"
+import BootSequence from "../components/BootSequence.astro"
 import { ViewTransitions } from "astro:transitions"
 
 interface Props {
@@ -48,11 +50,13 @@ const socialImageURL = new URL(image, Astro.site)
   </head>
 
   <body class="relative text-black dark:text-white">
+    <BootSequence />
     <ThreeBackground />
     <div class="app-background" aria-hidden="true"></div>
     <Header />
     <slot />
     <Footer />
+    <CommandPalette />
     <style is:global>
       :root {
         color-scheme: light dark;
