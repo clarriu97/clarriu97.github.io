@@ -1,0 +1,229 @@
+---
+const username = "clarriu97"
+---
+
+<div class="gh-contrib" data-username={username}>
+  <div class="gh-head">
+    <p id="gh-total" class="gh-total">Loading GitHub activity…</p>
+    <a
+      class="gh-link"
+      href={`https://github.com/${username}`}
+      target="_blank"
+      rel="noopener"
+    >
+      @{username} ↗
+    </a>
+  </div>
+
+  <div
+    id="gh-graph"
+    class="gh-graph"
+    role="img"
+    aria-label="GitHub contribution activity over the last year"
+  >
+    <div class="gh-skeleton"></div>
+  </div>
+
+  <div class="gh-legend" aria-hidden="true">
+    <span>Less</span>
+    <span class="gh-cell" data-level="0"></span>
+    <span class="gh-cell" data-level="1"></span>
+    <span class="gh-cell" data-level="2"></span>
+    <span class="gh-cell" data-level="3"></span>
+    <span class="gh-cell" data-level="4"></span>
+    <span>More</span>
+  </div>
+</div>
+
+<style>
+  .gh-contrib {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    padding: 1.1rem 1.2rem;
+  }
+  .gh-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  .gh-total {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .gh-total :global(strong) {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .gh-link {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    transition: color 0.2s;
+  }
+  .gh-link:hover {
+    color: var(--accent);
+  }
+
+  .gh-graph {
+    overflow-x: auto;
+    padding-bottom: 0.3rem;
+  }
+  .gh-graph :global(.gh-weeks) {
+    display: flex;
+    gap: 3px;
+    min-width: max-content;
+  }
+  .gh-graph :global(.gh-week) {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  /* :global so the styles also reach the cells created in JS, which don't
+     carry Astro's scoping attribute. */
+  .gh-contrib :global(.gh-cell) {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    border: none;
+  }
+  .gh-contrib :global(.gh-cell[data-level="1"]) {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  .gh-contrib :global(.gh-cell[data-level="2"]) {
+    background: color-mix(in srgb, var(--accent) 52%, transparent);
+  }
+  .gh-contrib :global(.gh-cell[data-level="3"]) {
+    background: color-mix(in srgb, var(--accent) 76%, transparent);
+  }
+  .gh-contrib :global(.gh-cell[data-level="4"]) {
+    background: var(--accent);
+    box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .gh-graph :global(.gh-empty-cell) {
+    visibility: hidden;
+  }
+
+  .gh-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 0.7rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .gh-skeleton {
+    height: 96px;
+    border-radius: 8px;
+    background: linear-gradient(
+      90deg,
+      var(--surface-2),
+      color-mix(in srgb, var(--surface-2) 40%, transparent),
+      var(--surface-2)
+    );
+    background-size: 200% 100%;
+    animation: gh-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes gh-shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  .gh-graph :global(.gh-error) {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gh-skeleton {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  type GhDay = { date: string; count: number; level: number }
+
+  const initGhContrib = () => {
+    const root = document.querySelector<HTMLElement>(".gh-contrib")
+    if (!root || root.dataset.loaded === "1") return
+
+    const username = root.dataset.username || "clarriu97"
+    const graph = root.querySelector<HTMLElement>("#gh-graph")
+    const totalEl = root.querySelector<HTMLElement>("#gh-total")
+    if (!graph || !totalEl) return
+
+    const fail = () => {
+      root.dataset.loaded = "1"
+      totalEl.textContent = "GitHub activity"
+      graph.innerHTML = `<p class="gh-error">Couldn't load live data — <a class="gh-link" href="https://github.com/${username}" target="_blank" rel="noopener">view on GitHub ↗</a></p>`
+    }
+
+    fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("http"))))
+      .then((data: { contributions?: GhDay[] }) => {
+        const days = data.contributions || []
+        if (!days.length) {
+          fail()
+          return
+        }
+        root.dataset.loaded = "1"
+
+        const total = days.reduce((sum: number, d: GhDay) => sum + (d.count || 0), 0)
+        totalEl.innerHTML = `<strong>${total.toLocaleString()}</strong> contributions in the last year`
+
+        const weeks: (GhDay | null)[][] = []
+        let current: (GhDay | null)[] = []
+        days.forEach((d: GhDay) => {
+          const weekday = new Date(`${d.date}T00:00:00`).getDay()
+          if (weekday === 0 && current.length) {
+            weeks.push(current)
+            current = []
+          }
+          if (!current.length && weeks.length === 0) {
+            for (let i = 0; i < weekday; i++) current.push(null)
+          }
+          current.push(d)
+        })
+        if (current.length) weeks.push(current)
+
+        const wrap = document.createElement("div")
+        wrap.className = "gh-weeks"
+        weeks.forEach((week: (GhDay | null)[]) => {
+          const col = document.createElement("div")
+          col.className = "gh-week"
+          week.forEach((d: GhDay | null) => {
+            const cell = document.createElement("span")
+            cell.className = d ? "gh-cell" : "gh-cell gh-empty-cell"
+            if (d) {
+              cell.dataset.level = String(d.level ?? 0)
+              const plural = d.count === 1 ? "" : "s"
+              cell.title = `${d.count} contribution${plural} on ${d.date}`
+            }
+            col.appendChild(cell)
+          })
+          wrap.appendChild(col)
+        })
+        graph.innerHTML = ""
+        graph.appendChild(wrap)
+      })
+      .catch(fail)
+  }
+
+  document.addEventListener("astro:page-load", initGhContrib)
+</script>
