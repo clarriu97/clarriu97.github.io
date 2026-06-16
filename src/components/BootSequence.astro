@@ -1,0 +1,196 @@
+---
+const banner = String.raw`  ____    _    ____  _     ___  ____
+ / ___|  / \  |  _ \| |   / _ \/ ___|
+| |     / _ \ | |_) | |  | | | \___ \
+| |___ / ___ \|  _ <| |__| |_| |___) |
+ \____/_/   \_\_| \_\_____\___/|____/`
+---
+
+<div id="boot-screen" aria-hidden="true">
+  <div class="boot-inner">
+    <pre class="boot-banner">{banner}</pre>
+    <pre id="boot-log" class="boot-log"></pre>
+  </div>
+  <div class="boot-skip">press any key to skip</div>
+</div>
+
+<script is:inline>
+  // Runs as the body starts parsing — hides the boot screen with no flash on
+  // every load after the first of this browser session.
+  if (sessionStorage.getItem("larri-booted") === "1") {
+    document.documentElement.classList.add("booted")
+  }
+</script>
+
+<style>
+  #boot-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: #06080c;
+    color: #c2cad6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  :global(html.booted) #boot-screen {
+    display: none;
+  }
+  #boot-screen.boot-out {
+    animation: boot-fade 0.5s ease forwards;
+  }
+  @keyframes boot-fade {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  .boot-inner {
+    width: 100%;
+    max-width: 520px;
+  }
+  .boot-banner {
+    margin: 0 0 1.1rem;
+    color: var(--accent, #5eebff);
+    text-shadow: 0 0 12px rgba(94, 235, 255, 0.4);
+    font-size: clamp(0.4rem, 2.2vw, 0.72rem);
+    line-height: 1.1;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .boot-log {
+    margin: 0;
+    font-size: clamp(0.72rem, 2.4vw, 0.85rem);
+    line-height: 1.7;
+    min-height: 9.5em;
+    white-space: pre-wrap;
+  }
+  .boot-line {
+    opacity: 0;
+    animation: boot-line-in 0.18s ease forwards;
+  }
+  @keyframes boot-line-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .boot-ok {
+    color: #28c840;
+  }
+  .boot-accent {
+    color: var(--accent, #5eebff);
+  }
+  .boot-line.welcome {
+    margin-top: 0.4rem;
+    color: var(--accent, #5eebff);
+    font-weight: 600;
+  }
+  .boot-skip {
+    position: absolute;
+    bottom: 1.2rem;
+    color: #5a6472;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boot-line {
+      animation: none;
+      opacity: 1;
+    }
+    #boot-screen.boot-out {
+      animation: none;
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  type BootLine = { text: string; kind?: "cmd" | "ok" | "welcome" }
+
+  const BOOT_KEY = "larri-booted"
+
+  const LINES: BootLine[] = [
+    { text: "visitor@larri.dev:~$ ./boot.sh", kind: "cmd" },
+    { text: "Mounting /home/carlos", kind: "ok" },
+    { text: "Loading aurora renderer", kind: "ok" },
+    { text: "Initializing WebGL context", kind: "ok" },
+    { text: "Spawning command palette (⌘K)", kind: "ok" },
+    { text: "Fetching GitHub activity", kind: "ok" },
+    { text: "Compiling portfolio modules", kind: "ok" },
+    { text: "All systems nominal", kind: "ok" },
+    { text: "> Welcome.", kind: "welcome" },
+  ]
+
+  const render = (line: BootLine): string => {
+    if (line.kind === "ok") {
+      return `<span class="boot-ok">[ OK ]</span> ${line.text}`
+    }
+    if (line.kind === "cmd") {
+      return `<span class="boot-accent">visitor@larri.dev</span>:~$ ./boot.sh`
+    }
+    return `<span class="boot-accent">${line.text}</span>`
+  }
+
+  const runBoot = () => {
+    const screen = document.getElementById("boot-screen")
+    if (!screen) return
+
+    if (sessionStorage.getItem(BOOT_KEY) === "1") {
+      screen.remove()
+      return
+    }
+
+    const log = screen.querySelector<HTMLElement>("#boot-log")
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timers: number[] = []
+    let finished = false
+
+    const finish = () => {
+      if (finished) return
+      finished = true
+      timers.forEach((t) => clearTimeout(t))
+      sessionStorage.setItem(BOOT_KEY, "1")
+      document.documentElement.classList.add("booted")
+      document.removeEventListener("keydown", finish)
+      screen.removeEventListener("click", finish)
+      screen.classList.add("boot-out")
+      window.setTimeout(() => screen.remove(), 520)
+    }
+
+    document.addEventListener("keydown", finish)
+    screen.addEventListener("click", finish)
+
+    if (reduce || !log) {
+      finish()
+      return
+    }
+
+    log.innerHTML = ""
+    LINES.forEach((line, i) => {
+      timers.push(
+        window.setTimeout(() => {
+          if (finished) return
+          const el = document.createElement("div")
+          el.className = `boot-line ${line.kind === "welcome" ? "welcome" : ""}`
+          el.innerHTML = render(line)
+          log.appendChild(el)
+          if (i === LINES.length - 1) {
+            timers.push(window.setTimeout(finish, 700))
+          }
+        }, 150 * (i + 1))
+      )
+    })
+  }
+
+  document.addEventListener("astro:page-load", runBoot)
+</script>
