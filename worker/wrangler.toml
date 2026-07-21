@@ -1,0 +1,19 @@
+name = "larri-chat"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+# Workers AI binding — this is what makes env.AI.run(...) work. No API key needed.
+[ai]
+binding = "AI"
+
+# Origins allowed to call the Worker (CORS). Add your production domain here.
+[vars]
+ALLOWED_ORIGINS = "https://larri.dev,http://localhost:4321"
+
+# To serve this at chat.larri.dev, add a route once the custom domain is set up
+# in the Cloudflare dashboard (Workers & Pages -> your worker -> Settings ->
+# Domains & Routes), or uncomment and adjust:
+#
+# [[routes]]
+# pattern = "chat.larri.dev"
+# custom_domain = true
