@@ -11,13 +11,13 @@
  */
 import { buildSystemPrompt } from './knowledge'
 import { callModel, type ChatMessage, type ModelEnv } from './providers'
+import { checkRateLimit, verifyTurnstile, type GuardrailEnv } from './guardrails'
 
-export interface Env extends ModelEnv {
+export interface Env extends ModelEnv, GuardrailEnv {
   // Comma-separated list of origins allowed to call this Worker.
   ALLOWED_ORIGINS?: string
 }
 
-// Guardrail Layer B (cheap caps). Turnstile + KV rate-limiting = phase 2.
 const MAX_MESSAGES = 20 // only the most recent turns are used
 const MAX_CHARS_PER_MESSAGE = 2000
 
@@ -67,6 +67,29 @@ export default {
       payload = await request.json()
     } catch {
       return json({ error: 'Invalid JSON' }, 400, origin)
+    }
+
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
+
+    // Guardrail Layer B, check 1: prove this is a real browser, not a script.
+    // Required in every environment — misconfiguration should fail closed.
+    if (!env.TURNSTILE_SECRET_KEY) {
+      console.error('TURNSTILE_SECRET_KEY is not configured')
+      return json({ error: 'Server misconfigured' }, 500, origin)
+    }
+    const turnstileToken = (payload as { turnstileToken?: unknown })?.turnstileToken
+    if (typeof turnstileToken !== 'string' || turnstileToken.length === 0) {
+      return json({ error: 'Verification required' }, 403, origin)
+    }
+    const human = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip)
+    if (!human) {
+      return json({ error: 'Verification failed' }, 403, origin)
+    }
+
+    // Guardrail Layer B, check 2: cap requests per IP even from a real browser.
+    const withinLimit = await checkRateLimit(env, ip)
+    if (!withinLimit) {
+      return json({ error: 'Too many requests, try again later' }, 429, origin)
     }
 
     const incoming = (payload as { messages?: unknown })?.messages

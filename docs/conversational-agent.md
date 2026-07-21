@@ -1,7 +1,9 @@
 # Conversational Agent for larri.dev — Architecture & Decisions
 
-- **Status:** Proposed (nothing built yet — this is the plan)
-- **Date:** 2026-07-20
+- **Status:** Implemented — MVP + hardening (Turnstile + rate limiting) live and
+  verified end-to-end. Remaining manual setup: create the KV namespace and a real
+  Turnstile widget (see `worker/README.md`).
+- **Date:** 2026-07-20 (last updated 2026-07-21)
 - **Owner:** Carlos Larriu
 - **Related:** [../README.md](../README.md)
 
@@ -175,7 +177,7 @@ vector database** at this scale — it would be over-engineering.
 
 ---
 
-## 7. Decision — Guardrails (two layers)
+## 7. Decision — Guardrails (two layers, both implemented)
 
 **Layer A — Topic scope (correctness).** System-prompt instruction constraining the
 bot to Carlos-related topics, with a polite refuse-and-redirect for anything else.
@@ -183,14 +185,33 @@ Sufficient for a personal site. An optional cheap pre-classifier can be added la
 is not needed at launch.
 
 **Layer B — Abuse & cost protection (this is what actually protects the bill).**
-- **Cloudflare Turnstile** (invisible CAPTCHA) so bots can't hammer the endpoint.
-- **Rate limiting** per IP / anon_id via Workers KV (e.g. 10 msg/min, 50/day).
-- **Hard caps:** max input length per message, max turns per conversation, bounded
-  `max_tokens` on output.
-- **Spend guard** on the provider side where available.
+Implemented in `worker/src/guardrails.ts`, checked on every request before the model
+is called:
+- **Cloudflare Turnstile.** The client solves an invisible challenge and sends the
+  token with each message; the Worker verifies it against Cloudflare's siteverify
+  endpoint. Proves the caller executed real browser JS — blocks curl/script traffic
+  outright, independent of CORS (which only browsers respect).
+- **Rate limiting per IP via Workers KV.** Fixed-window counters, 10 requests/minute
+  and 50/day per `CF-Connecting-IP`. Keyed off the request IP rather than a
+  client-supplied ID (e.g. `anon_id`) specifically because the client can reset or
+  spoof any identifier it controls — the IP is the one thing it can't choose.
+  Bounds volume even from a real, Turnstile-verified browser.
+- **Hard caps (Layer 0, cheap):** max 20 messages per turn, max 2,000 characters per
+  message — already in place before Layer B, unconditional.
+
+Exceeding Turnstile verification returns `403`; exceeding the rate limit returns `429`.
+Both checks run server-side and fail closed: a request with no Turnstile token, an
+invalid one, or a misconfigured secret is rejected rather than silently allowed through.
 
 Prompt-injection risk is low (content is public info about Carlos), but user input must
 never be allowed to override the system instructions.
+
+**Setup required outside the code** (see `worker/README.md`): a KV namespace
+(`wrangler kv namespace create RATE_LIMIT`) and a Turnstile widget (Cloudflare
+dashboard) with its secret key added as a GitHub Actions secret. Until the Turnstile
+widget is created, both sides default to Cloudflare's public test key pair, which
+always passes — the rate limit is still fully active and effective in that interim
+state; only the bot-detection layer is a no-op until real keys are configured.
 
 ---
 
@@ -239,12 +260,13 @@ flowchart TD
 
 ## 10. Phased plan
 
-1. **MVP:** dossier + Worker + terminal-style widget + Workers AI (Llama) streaming +
-   scope guardrail in the system prompt.
-2. **Hardening:** Turnstile + KV rate-limit + input/turn/output caps.
-3. **Persistence UX:** `localStorage` anon_id + single transcript, continue/delete.
-4. **Optional:** anonymized Q&A log in D1; provider swap to Nova/Gemini if desired;
-   prompt caching or light retrieval if the dossier grows.
+1. **MVP (done):** dossier + Worker + terminal-style widget + Workers AI (Llama)
+   streaming + scope guardrail in the system prompt. Deployed via GitHub Actions,
+   verified end-to-end against the live Worker.
+2. **Hardening (done):** Turnstile + KV rate-limit + input/turn/output caps — see §7.
+3. **Persistence UX (done):** `localStorage` anon_id + single transcript, continue/delete.
+4. **Optional, not started:** anonymized Q&A log in D1; provider swap to Nova/Gemini
+   if desired; prompt caching or light retrieval if the dossier grows.
 
 ---
 

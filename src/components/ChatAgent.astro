@@ -10,6 +10,14 @@ import ChatIcon from "./icons/Chat.astro"
 // a custom domain like chat.larri.dev is set up, update the fallback below.
 const endpoint =
   import.meta.env.PUBLIC_CHAT_ENDPOINT || "https://larri-chat.larridev.workers.dev/chat"
+
+// Turnstile (guardrail Layer B — proves a real browser, not a script, is
+// calling the Worker). The widget is configured for both larri.dev (prod) and
+// localhost (dev) hostnames, so this one key works in both places, same as
+// the endpoint above. Override with PUBLIC_TURNSTILE_SITE_KEY if you ever
+// need to point at a different widget (e.g. a staging one).
+const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAD6oU7E2Q9VJxwWm"
 ---
 
 <button
@@ -30,6 +38,7 @@ const endpoint =
   id="chat-panel"
   class="chat-panel"
   data-endpoint={endpoint}
+  data-turnstile-sitekey={turnstileSiteKey}
   hidden
   role="dialog"
   aria-label="Ask about Carlos"
@@ -65,6 +74,10 @@ const endpoint =
       send
     </button>
   </form>
+
+  <!-- Managed mode stays invisible for most visitors; only shows a checkbox
+       to ones Cloudflare flags as risky, rendered right here if so. -->
+  <div id="chat-turnstile" class="chat-turnstile"></div>
 </div>
 
 <style is:global>
@@ -286,6 +299,11 @@ const endpoint =
     padding: 0.7rem 0.85rem;
     border-top: 1px solid var(--border);
   }
+  /* Empty for the vast majority of visitors (Managed mode auto-passes them
+     silently). Only occupies space if Cloudflare shows a challenge box. */
+  .chat-turnstile:not(:empty) {
+    padding: 0 0.85rem 0.7rem;
+  }
   .chat-prompt {
     color: var(--accent);
     font-weight: 700;
@@ -347,6 +365,39 @@ const endpoint =
   type Controller = { open: () => void; close: () => void; toggle: () => void }
   let controller: Controller | null = null
 
+  // --- Turnstile (guardrail Layer B: proves a real browser, not a script) ---
+  interface TurnstileRenderOptions {
+    sitekey: string
+    size?: "normal" | "compact" | "flexible"
+    callback?: (token: string) => void
+    "expired-callback"?: () => void
+    "error-callback"?: () => void
+  }
+  interface TurnstileApi {
+    render: (container: string | HTMLElement, options: TurnstileRenderOptions) => string
+    reset: (widgetId?: string) => void
+  }
+  declare global {
+    interface Window {
+      turnstile?: TurnstileApi
+    }
+  }
+
+  let turnstileScriptPromise: Promise<void> | null = null
+  const loadTurnstileScript = (): Promise<void> => {
+    if (turnstileScriptPromise) return turnstileScriptPromise
+    turnstileScriptPromise = new Promise((resolve) => {
+      if (window.turnstile) return resolve()
+      const script = document.createElement("script")
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+      script.async = true
+      script.defer = true
+      script.addEventListener("load", () => resolve())
+      document.head.appendChild(script)
+    })
+    return turnstileScriptPromise
+  }
+
   // Bound once for the page lifetime (Cmd+K palette dispatches this on window).
   window.addEventListener("larri:open-chat", () => controller?.open())
 
@@ -359,9 +410,70 @@ const endpoint =
     const sendBtn = document.getElementById("chat-send") as HTMLButtonElement | null
     const clearBtn = document.getElementById("chat-clear")
     const closeBtn = document.getElementById("chat-close")
+    const turnstileContainer = document.getElementById("chat-turnstile")
     if (!launcher || !panel || !log || !form || !input || !sendBtn) return
 
     const endpoint = panel.dataset.endpoint || ""
+    const turnstileSiteKey = panel.dataset.turnstileSitekey || ""
+
+    let turnstileWidgetId: string | null = null
+    let turnstileToken: string | null = null
+
+    const ensureTurnstileWidget = async () => {
+      if (!turnstileContainer || !turnstileSiteKey || turnstileWidgetId !== null) return
+      await loadTurnstileScript()
+      if (!window.turnstile) return
+      turnstileWidgetId = window.turnstile.render(turnstileContainer, {
+        sitekey: turnstileSiteKey,
+        // "invisible" isn't a real Turnstile size (that's reCAPTCHA's API) —
+        // whether a challenge is ever shown is controlled by the widget's
+        // Widget Mode setting in the Cloudflare dashboard (we use "Managed",
+        // which stays invisible for most visitors and only shows a checkbox
+        // to ones Cloudflare flags as risky). "flexible" just sizes the
+        // widget to its container if a challenge does render.
+        size: "flexible",
+        callback: (token) => {
+          turnstileToken = token
+        },
+        "expired-callback": () => {
+          turnstileToken = null
+        },
+        "error-callback": () => {
+          turnstileToken = null
+        },
+      })
+    }
+
+    // The widget auto-runs on render and calls back with a token once
+    // Cloudflare finishes evaluating the visitor (no explicit execute() call
+    // needed). Each token is single-use, so we hand it out and immediately
+    // reset for the next message.
+    const getTurnstileToken = async (): Promise<string | null> => {
+      await ensureTurnstileWidget()
+      if (!window.turnstile || turnstileWidgetId === null) return null
+      if (turnstileToken) {
+        const token = turnstileToken
+        turnstileToken = null
+        window.turnstile.reset(turnstileWidgetId)
+        return token
+      }
+      return new Promise((resolve) => {
+        const deadline = Date.now() + 5000
+        const poll = () => {
+          if (turnstileToken) {
+            const token = turnstileToken
+            turnstileToken = null
+            window.turnstile?.reset(turnstileWidgetId ?? undefined)
+            resolve(token)
+          } else if (Date.now() > deadline) {
+            resolve(null)
+          } else {
+            setTimeout(poll, 100)
+          }
+        }
+        poll()
+      })
+    }
 
     let anonId = localStorage.getItem(ANON_KEY)
     if (!anonId) {
@@ -423,6 +535,9 @@ const endpoint =
       launcher.setAttribute("aria-expanded", "true")
       renderAll()
       requestAnimationFrame(() => input.focus())
+      // Start solving as soon as the chat opens, so a token is usually ready
+      // by the time the visitor finishes typing their first message.
+      void ensureTurnstileWidget()
     }
     const close = () => {
       panel.setAttribute("hidden", "")
@@ -455,13 +570,15 @@ const endpoint =
         // Note: anonId stays client-side only (localStorage identity for the
         // single-thread UX). It isn't sent to the Worker — a custom header
         // here isn't in the Worker's CORS allow-list and would break the
-        // request, and server-side rate limiting (phase 2) will key off the
-        // request IP instead, which the client can't spoof.
+        // request, and server-side rate limiting keys off the request IP
+        // instead, which the client can't spoof.
+        const turnstileToken = await getTurnstileToken()
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages }),
+          body: JSON.stringify({ messages, turnstileToken }),
         })
+        if (res.status === 429) throw new Error("rate limited")
         if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
@@ -472,10 +589,13 @@ const endpoint =
           replyEl.textContent = acc
           log.scrollTop = log.scrollHeight
         }
-      } catch {
+      } catch (err) {
+        const rateLimited = err instanceof Error && err.message === "rate limited"
         acc =
           acc ||
-          "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com."
+          (rateLimited
+            ? "You've sent a lot of messages — please wait a bit before trying again."
+            : "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com.")
         replyEl.textContent = acc
       } finally {
         bubble.classList.remove("is-streaming")

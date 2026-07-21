@@ -10,6 +10,12 @@ binding = "AI"
 [vars]
 ALLOWED_ORIGINS = "https://larri.dev,http://localhost:4321"
 
+# Rate-limit counters (per-IP, phase 2 guardrail). Created with:
+#   npx wrangler kv namespace create RATE_LIMIT
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "1570b0aa99f949239e69ad474ea99c34"
+
 # To serve this at chat.larri.dev, add a route once the custom domain is set up
 # in the Cloudflare dashboard (Workers & Pages -> your worker -> Settings ->
 # Domains & Routes), or uncomment and adjust:
