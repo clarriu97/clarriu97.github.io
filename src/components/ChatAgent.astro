@@ -1,0 +1,524 @@
+---
+import ChatIcon from "./icons/Chat.astro"
+
+// Floating "ask about Carlos" chat. Talks to the Cloudflare Worker (see worker/).
+// Default points at the deployed *.workers.dev URL, which already allows both
+// https://larri.dev (prod) and http://localhost:4321 (dev) in its CORS config
+// (see worker/wrangler.toml ALLOWED_ORIGINS) — so this works in both places
+// with zero extra config. Override with PUBLIC_CHAT_ENDPOINT in a local .env
+// (gitignored) to point at a locally-running `wrangler dev` instead, or once
+// a custom domain like chat.larri.dev is set up, update the fallback below.
+const endpoint =
+  import.meta.env.PUBLIC_CHAT_ENDPOINT || "https://larri-chat.larridev.workers.dev/chat"
+---
+
+<button
+  id="chat-launcher"
+  class="chat-launcher"
+  type="button"
+  aria-label="Chat with an AI assistant about Carlos"
+  aria-expanded="false"
+>
+  <span class="chat-launcher-icon" aria-hidden="true">
+    <ChatIcon class="chat-launcher-glyph" />
+    <span class="chat-launcher-dot"></span>
+  </span>
+  <span class="chat-launcher-label">Ask AI about Carlos</span>
+</button>
+
+<div
+  id="chat-panel"
+  class="chat-panel"
+  data-endpoint={endpoint}
+  hidden
+  role="dialog"
+  aria-label="Ask about Carlos"
+>
+  <div class="chat-bar">
+    <span class="dot dot-red" aria-hidden="true"></span>
+    <span class="dot dot-amber" aria-hidden="true"></span>
+    <span class="dot dot-green" aria-hidden="true"></span>
+    <span class="chat-title font-mono">ask@larri.dev: ~</span>
+    <button id="chat-clear" class="chat-tool" type="button" title="Clear conversation">
+      clear
+    </button>
+    <button id="chat-close" class="chat-tool" type="button" aria-label="Close chat">
+      esc
+    </button>
+  </div>
+
+  <div id="chat-log" class="chat-log" aria-live="polite" aria-atomic="false"></div>
+
+  <form id="chat-form" class="chat-form">
+    <span class="chat-prompt font-mono" aria-hidden="true">&#10095;</span>
+    <textarea
+      id="chat-input"
+      class="chat-input font-mono"
+      rows="1"
+      placeholder="Ask me about Carlos…"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      aria-label="Message"></textarea>
+    <button id="chat-send" class="chat-send" type="submit" aria-label="Send">
+      send
+    </button>
+  </form>
+</div>
+
+<style is:global>
+  /*
+   * is:global is required here: chat bubbles/labels are created client-side
+   * with document.createElement(), so they never receive Astro's per-component
+   * scoping attribute. Scoped selectors would silently never match them.
+   */
+  /*
+   * Deliberately placed at bottom-LEFT, away from the search/Cmd+K launcher
+   * (bottom-right) — two stacked floating buttons in the same corner read as
+   * one menu and blur the fact that this one opens an AI chat, not search.
+   */
+  .chat-launcher {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.9rem 0.5rem 0.5rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .chat-launcher:hover {
+    color: var(--text);
+    border-color: var(--accent-soft);
+    transform: translateY(-1px);
+  }
+  .chat-launcher-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 9999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .chat-launcher-glyph {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+  .chat-launcher-dot {
+    position: absolute;
+    bottom: -0.05rem;
+    right: -0.05rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background: #28c840;
+    border: 2px solid var(--surface);
+    animation: chat-dot-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes chat-dot-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.25); opacity: 0.75; }
+  }
+  .chat-launcher-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .chat-panel {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    z-index: 55;
+    display: flex;
+    flex-direction: column;
+    width: min(380px, calc(100vw - 2rem));
+    height: min(72vh, 560px);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    animation: chat-in 0.16s ease-out;
+  }
+  .chat-panel[hidden] {
+    display: none;
+  }
+  @keyframes chat-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .chat-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  }
+  .dot {
+    display: inline-block;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 9999px;
+  }
+  .dot-red { background: #ff5f57; }
+  .dot-amber { background: #febc2e; }
+  .dot-green { background: #28c840; }
+  .chat-title {
+    flex: 1;
+    margin-left: 0.4rem;
+    font-size: 0.76rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-tool {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.1rem 0.4rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .chat-tool:hover {
+    color: var(--text);
+    border-color: var(--accent-soft);
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .chat-hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .chat-msg {
+    max-width: 85%;
+    padding: 0.5rem 0.7rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .chat-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .chat-role {
+    display: block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.2rem;
+  }
+  .chat-user {
+    align-self: flex-end;
+    background: color-mix(in srgb, var(--accent) 20%, var(--surface-2));
+    color: var(--text);
+    border: 1px solid var(--accent-soft);
+  }
+  .chat-user .chat-role {
+    text-align: right;
+    color: var(--accent);
+  }
+  .chat-assistant {
+    align-self: flex-start;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .chat-assistant .chat-role {
+    text-align: left;
+    color: var(--muted);
+  }
+  .chat-assistant.is-streaming .chat-text::after {
+    content: "";
+    display: inline-block;
+    width: 0.5ch;
+    height: 1em;
+    margin-left: 0.1em;
+    vertical-align: -0.15em;
+    background-color: var(--accent);
+    animation: chat-caret 1s step-end infinite;
+  }
+  @keyframes chat-caret {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .chat-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.7rem 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+  .chat-prompt {
+    color: var(--accent);
+    font-weight: 700;
+    padding-bottom: 0.35rem;
+  }
+  .chat-input {
+    flex: 1;
+    min-width: 0;
+    resize: none;
+    max-height: 6rem;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .chat-input::placeholder {
+    color: var(--muted);
+  }
+  .chat-send {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+    transition: border-color 0.2s, opacity 0.2s;
+  }
+  .chat-send:hover {
+    border-color: var(--accent-soft);
+  }
+  .chat-send:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  @media (max-width: 480px) {
+    .chat-launcher-label { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-panel { animation: none; }
+    .chat-launcher { transition: none; }
+    .chat-launcher-dot { animation: none; }
+    .chat-assistant.is-streaming .chat-text::after { animation: none; }
+  }
+</style>
+
+<script>
+  type Msg = { role: "user" | "assistant"; content: string }
+
+  const ANON_KEY = "larri.chat.anonId"
+  const LOG_KEY = "larri.chat.transcript"
+  const GREETING =
+    "Hi — ask me anything about Carlos: his work, projects, or how to reach him."
+
+  type Controller = { open: () => void; close: () => void; toggle: () => void }
+  let controller: Controller | null = null
+
+  // Bound once for the page lifetime (Cmd+K palette dispatches this on window).
+  window.addEventListener("larri:open-chat", () => controller?.open())
+
+  const initChatAgent = () => {
+    const launcher = document.getElementById("chat-launcher")
+    const panel = document.getElementById("chat-panel")
+    const log = document.getElementById("chat-log")
+    const form = document.getElementById("chat-form")
+    const input = document.getElementById("chat-input") as HTMLTextAreaElement | null
+    const sendBtn = document.getElementById("chat-send") as HTMLButtonElement | null
+    const clearBtn = document.getElementById("chat-clear")
+    const closeBtn = document.getElementById("chat-close")
+    if (!launcher || !panel || !log || !form || !input || !sendBtn) return
+
+    const endpoint = panel.dataset.endpoint || ""
+
+    let anonId = localStorage.getItem(ANON_KEY)
+    if (!anonId) {
+      anonId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : String(Date.now())
+      localStorage.setItem(ANON_KEY, anonId)
+    }
+
+    const load = (): Msg[] => {
+      try {
+        const raw = localStorage.getItem(LOG_KEY)
+        const parsed = raw ? JSON.parse(raw) : []
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    const save = (m: Msg[]) => localStorage.setItem(LOG_KEY, JSON.stringify(m))
+
+    let messages: Msg[] = load()
+    let streaming = false
+
+    const addBubble = (role: "user" | "assistant", content: string) => {
+      const el = document.createElement("div")
+      el.className = `chat-msg chat-${role}`
+
+      const label = document.createElement("span")
+      label.className = "chat-role"
+      label.textContent = role === "user" ? "you" : "assistant"
+      el.appendChild(label)
+
+      const text = document.createElement("div")
+      text.className = "chat-text"
+      text.textContent = content
+      el.appendChild(text)
+
+      log.appendChild(el)
+      return { bubble: el, text }
+    }
+
+    const renderAll = () => {
+      log.innerHTML = ""
+      if (messages.length === 0) {
+        const hint = document.createElement("div")
+        hint.className = "chat-hint"
+        hint.textContent = GREETING
+        log.appendChild(hint)
+      } else {
+        messages.forEach((m) => addBubble(m.role, m.content))
+      }
+      log.scrollTop = log.scrollHeight
+    }
+
+    const isOpen = () => !panel.hasAttribute("hidden")
+    const open = () => {
+      panel.removeAttribute("hidden")
+      launcher.setAttribute("aria-expanded", "true")
+      renderAll()
+      requestAnimationFrame(() => input.focus())
+    }
+    const close = () => {
+      panel.setAttribute("hidden", "")
+      launcher.setAttribute("aria-expanded", "false")
+    }
+
+    const autoGrow = () => {
+      input.style.height = "auto"
+      input.style.height = Math.min(input.scrollHeight, 96) + "px"
+    }
+
+    const send = async (raw: string) => {
+      const text = raw.trim()
+      if (!text || streaming) return
+
+      messages.push({ role: "user", content: text })
+      save(messages)
+      renderAll()
+      input.value = ""
+      autoGrow()
+
+      streaming = true
+      sendBtn.disabled = true
+      const { bubble, text: replyEl } = addBubble("assistant", "")
+      bubble.classList.add("is-streaming")
+      log.scrollTop = log.scrollHeight
+
+      let acc = ""
+      try {
+        // Note: anonId stays client-side only (localStorage identity for the
+        // single-thread UX). It isn't sent to the Worker — a custom header
+        // here isn't in the Worker's CORS allow-list and would break the
+        // request, and server-side rate limiting (phase 2) will key off the
+        // request IP instead, which the client can't spoof.
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages }),
+        })
+        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          acc += decoder.decode(value, { stream: true })
+          replyEl.textContent = acc
+          log.scrollTop = log.scrollHeight
+        }
+      } catch {
+        acc =
+          acc ||
+          "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com."
+        replyEl.textContent = acc
+      } finally {
+        bubble.classList.remove("is-streaming")
+        streaming = false
+        sendBtn.disabled = false
+        messages.push({ role: "assistant", content: acc })
+        save(messages)
+        input.focus()
+      }
+    }
+
+    const clearChat = () => {
+      messages = []
+      save(messages)
+      renderAll()
+      input.focus()
+    }
+
+    launcher.addEventListener("click", () => (isOpen() ? close() : open()))
+    closeBtn?.addEventListener("click", close)
+    clearBtn?.addEventListener("click", clearChat)
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault()
+      void send(input.value)
+    })
+
+    input.addEventListener("input", autoGrow)
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        void send(input.value)
+      }
+    })
+    panel.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        close()
+      }
+    })
+
+    controller = { open, close, toggle: () => (isOpen() ? close() : open()) }
+  }
+
+  document.addEventListener("astro:page-load", initChatAgent)
+</script>

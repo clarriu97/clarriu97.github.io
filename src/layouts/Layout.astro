@@ -5,6 +5,7 @@ import Header from "../components/Header.astro"
 import Footer from "../components/Footer.astro"
 import ThreeBackground from "../components/ThreeBackground.astro"
 import CommandPalette from "../components/CommandPalette.astro"
+import ChatAgent from "../components/ChatAgent.astro"
 import BootSequence from "../components/BootSequence.astro"
 import { ViewTransitions } from "astro:transitions"
 
@@ -57,6 +58,7 @@ const socialImageURL = new URL(image, Astro.site)
     <slot />
     <Footer />
     <CommandPalette />
+    <ChatAgent />
     <style is:global>
       :root {
         color-scheme: light dark;

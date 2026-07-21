@@ -9,6 +9,11 @@ import LinkedIn from "./icons/LinkedIn.astro"
 import SunIcon from "./icons/Sun.astro"
 import MoonIcon from "./icons/Moon.astro"
 import SystemIcon from "./icons/System.astro"
+import ChatIcon from "./icons/Chat.astro"
+
+const assistantCommands = [
+  { label: "Ask about Carlos", value: "chat", keywords: "chat ask ai assistant bot question talk agent", Icon: ChatIcon, action: "chat" },
+]
 
 const navCommands = [
   { label: "Home", value: "/", keywords: "home start top intro", Icon: Home, action: "nav" },
@@ -30,6 +35,7 @@ const themeCommands = [
 ]
 
 const groups = [
+  { id: "assistant", title: "Assistant", items: assistantCommands },
   { id: "nav", title: "Navigation", items: navCommands },
   { id: "social", title: "Connect", items: socialCommands },
   { id: "theme", title: "Theme", items: themeCommands },
@@ -412,7 +418,9 @@ const groups = [
       const action = el.dataset.cmd
       const value = el.dataset.value || ""
       close()
-      if (action === "external") {
+      if (action === "chat") {
+        window.dispatchEvent(new CustomEvent("larri:open-chat"))
+      } else if (action === "external") {
         window.open(value, "_blank", "noopener,noreferrer")
       } else if (action === "theme") {
         setTheme(value)
