@@ -246,8 +246,36 @@ const turnstileSiteKey =
     line-height: 1.5;
   }
   .chat-text {
-    white-space: pre-wrap;
     word-break: break-word;
+  }
+  /* User text is plain (textContent) — preserve their own line breaks/spacing. */
+  .chat-user .chat-text {
+    white-space: pre-wrap;
+  }
+  /* Assistant text is rendered markdown (real <p>/<ul>/<a> elements). */
+  .chat-assistant .chat-text p {
+    margin: 0 0 0.6em;
+  }
+  .chat-assistant .chat-text p:last-child {
+    margin-bottom: 0;
+  }
+  .chat-assistant .chat-text ul {
+    margin: 0 0 0.6em;
+    padding-left: 1.2em;
+  }
+  .chat-assistant .chat-text ul:last-child {
+    margin-bottom: 0;
+  }
+  .chat-assistant .chat-text li {
+    margin-bottom: 0.2em;
+  }
+  .chat-assistant .chat-text a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+  .chat-assistant .chat-text strong {
+    font-weight: 700;
   }
   .chat-role {
     display: block;
@@ -361,6 +389,65 @@ const turnstileSiteKey =
   const LOG_KEY = "larri.chat.transcript"
   const GREETING =
     "Hi — ask me anything about Carlos: his work, projects, or how to reach him."
+
+  // --- Minimal markdown renderer for assistant replies -----------------
+  // Narrow on purpose: bold, http(s) links, and "- "/"* " bullet lists — the
+  // only markdown the model actually produces. Always escape first so any
+  // raw HTML/URLs from the model can't inject tags or break out of
+  // attributes; only http(s) links are linkified (no javascript:/data: etc).
+  const escapeHtml = (s: string): string =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+
+  const renderInline = (s: string): string =>
+    s
+      .replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        (_m, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`,
+      )
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+
+  const renderMarkdown = (raw: string): string => {
+    const lines = escapeHtml(raw).split("\n")
+    const parts: string[] = []
+    let list: string[] = []
+    let para: string[] = []
+
+    const flushList = () => {
+      if (list.length) {
+        parts.push(`<ul>${list.map((item) => `<li>${renderInline(item)}</li>`).join("")}</ul>`)
+        list = []
+      }
+    }
+    const flushPara = () => {
+      if (para.length) {
+        parts.push(`<p>${para.map(renderInline).join("<br>")}</p>`)
+        para = []
+      }
+    }
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      const listItem = /^[-*]\s+(.*)$/.exec(trimmed)
+      if (listItem) {
+        flushPara()
+        list.push(listItem[1])
+      } else if (trimmed === "") {
+        flushList()
+        flushPara()
+      } else {
+        flushList()
+        para.push(trimmed)
+      }
+    }
+    flushList()
+    flushPara()
+    return parts.join("")
+  }
 
   type Controller = { open: () => void; close: () => void; toggle: () => void }
   let controller: Controller | null = null
@@ -498,6 +585,17 @@ const turnstileSiteKey =
     let messages: Msg[] = load()
     let streaming = false
 
+    // User text is shown verbatim (never interpret what a visitor typed as
+    // markdown). Assistant text is the model's own output, which does use
+    // markdown — render it, but only after html-escaping (see renderMarkdown).
+    const setBubbleText = (el: HTMLElement, role: "user" | "assistant", content: string) => {
+      if (role === "assistant") {
+        el.innerHTML = renderMarkdown(content)
+      } else {
+        el.textContent = content
+      }
+    }
+
     const addBubble = (role: "user" | "assistant", content: string) => {
       const el = document.createElement("div")
       el.className = `chat-msg chat-${role}`
@@ -509,7 +607,7 @@ const turnstileSiteKey =
 
       const text = document.createElement("div")
       text.className = "chat-text"
-      text.textContent = content
+      setBubbleText(text, role, content)
       el.appendChild(text)
 
       log.appendChild(el)
@@ -586,7 +684,7 @@ const turnstileSiteKey =
           const { done, value } = await reader.read()
           if (done) break
           acc += decoder.decode(value, { stream: true })
-          replyEl.textContent = acc
+          setBubbleText(replyEl, "assistant", acc)
           log.scrollTop = log.scrollHeight
         }
       } catch (err) {
@@ -596,7 +694,7 @@ const turnstileSiteKey =
           (rateLimited
             ? "You've sent a lot of messages — please wait a bit before trying again."
             : "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com.")
-        replyEl.textContent = acc
+        setBubbleText(replyEl, "assistant", acc)
       } finally {
         bubble.classList.remove("is-streaming")
         streaming = false

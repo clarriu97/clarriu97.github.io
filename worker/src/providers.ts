@@ -28,44 +28,40 @@ export async function callModel(
   env: ModelEnv,
   messages: ChatMessage[],
 ): Promise<ReadableStream<Uint8Array>> {
-  // `stream: true` returns an SSE ReadableStream, but the binding's types infer
-  // the non-streaming response shape, so cast through `unknown`.
-  const aiStream = (await env.AI.run(MODEL, {
+  // `stream: true` resolves to a ReadableStream that Workers AI also makes
+  // async-iterable, yielding already-parsed `{ response: "..." }` chunks —
+  // see Cloudflare's own docs (workers-ai gotchas: "Stream returns
+  // ReadableStream" / `for await (const chunk of stream) chunk.response`).
+  // We used to instead treat this as raw SSE bytes and hand-parse
+  // `data: {...}\n\n` lines ourselves; that manual byte/line buffering was
+  // the likely source of silently dropped tokens (any parse hiccup on a
+  // chunk-boundary split was swallowed). Consuming the async iterator
+  // directly lets the runtime handle framing instead of us.
+  const stream = await env.AI.run(MODEL, {
     messages,
     stream: true,
     max_tokens: 600,
-  })) as unknown as ReadableStream<Uint8Array>
+  })
+  // TS can't match our exact model string (with the `-fp8-fast` suffix)
+  // against its known-model overloads, so it falls back to an untyped
+  // `Record<string, unknown>` — cast through `unknown` to assert the actual
+  // runtime shape (a Workers AI streaming ReadableStream is async-iterable).
+  const chunks = stream as unknown as AsyncIterable<{ response?: string }>
 
-  // Workers AI streams SSE (`data: {"response":"..."}`). Normalize to plain text
-  // deltas so the client contract is provider-independent.
-  return aiStream.pipeThrough(sseToText())
-}
-
-function sseToText(): TransformStream<Uint8Array, Uint8Array> {
-  const decoder = new TextDecoder()
   const encoder = new TextEncoder()
-  let buffer = ''
-
-  return new TransformStream({
-    transform(chunk, controller) {
-      buffer += decoder.decode(chunk, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? '' // keep the (possibly partial) last line
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed.startsWith('data:')) continue
-        const data = trimmed.slice(5).trim()
-        if (data === '' || data === '[DONE]') continue
-        try {
-          const json = JSON.parse(data) as { response?: string }
-          if (typeof json.response === 'string' && json.response.length > 0) {
-            controller.enqueue(encoder.encode(json.response))
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const chunk of chunks) {
+          if (typeof chunk?.response === 'string' && chunk.response.length > 0) {
+            controller.enqueue(encoder.encode(chunk.response))
           }
-        } catch {
-          // keep-alive / partial JSON — ignore
         }
+      } catch (err) {
+        controller.error(err)
+        return
       }
+      controller.close()
     },
   })
 }
