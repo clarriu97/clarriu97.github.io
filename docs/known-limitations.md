@@ -90,9 +90,9 @@ after deploying, alongside #1 and #3).
 
 ## 3. Numeric substrings silently dropped mid-response (not a clean truncation)
 
-**Status: fix applied (root cause found), pending production verification —
-could not test locally (Workers AI needs `wrangler dev --remote`, which needs
-Cloudflare login this session doesn't have).**
+**Status: still open. The first fix attempt was wrong and caused a full
+outage — reverted. Diagnostic logging added; root cause not actually
+confirmed yet.**
 
 **Symptom:** initially reported as "runs out of tokens / response stays
 half-done." Reproduced in production — the response completed cleanly (full,
@@ -102,53 +102,104 @@ well-formed final sentence), but specific number-shaped substrings vanished:
 > "...he **shipped +** features..." (should be "shipped 80+ features")
 > "...improved AI inference performance by **%**..." (should be "by 60%")
 
-**Root cause, found:**
+**First attempt (reverted — broke everything):**
 [`worker/src/providers.ts`](../worker/src/providers.ts) was treating the
 Workers AI stream as raw SSE bytes and hand-parsing `data: {...}\n\n` lines
-byte-by-byte (buffering on `\n`, `JSON.parse`-ing each line, **silently
-swallowing any parse failure**). Checking Cloudflare's own Workers AI
-documentation (gotchas/patterns references) showed this was unnecessary and
-wrong: `env.AI.run(model, { stream: true })` returns a `ReadableStream` that
-Workers AI *also* makes async-iterable, yielding **already-parsed**
-`{ response: string }` chunks directly —
+byte-by-byte, silently swallowing any `JSON.parse` failure. Cloudflare's own
+Workers AI documentation (gotchas/patterns references) describes the stream
+as async-iterable, yielding already-parsed `{ response: string }` chunks
+directly:
 
 ```typescript
 const stream = await env.AI.run(model, { messages, stream: true });
 for await (const chunk of stream) { console.log(chunk.response); }
 ```
 
-— so the hand-rolled byte/line parser was reinventing something Cloudflare's
-runtime already does correctly, and any edge case in that manual buffering
-(a chunk boundary splitting a `data:` line awkwardly) silently dropped the
-fragment with no logging. This lines up exactly with the symptom: short
-tokens (a model tokenizes "5" and "+" separately) vanishing without a trace.
+Rewrote `callModel()` to consume it that way instead (`for await (const
+chunk of chunks)`, re-encoding `chunk.response`) — typechecked clean, reasoning
+matched the docs. **Deployed, and broke the chat entirely**: every request
+returned a real `200 OK` with a **completely empty body** (confirmed by
+instrumenting `fetch` in a fresh, unpolluted browser tab against production
+— zero chunks, no error, stream just closed immediately). Whatever `stream`
+actually is at runtime for this model, iterating it with `for await` drained
+successfully but yielded nothing usable — the documented behavior didn't
+hold here, and we don't yet know why (different behavior for the
+`-fp8-fast` model suffix? a workerd/runtime version difference? doc
+describing a different call shape?).
 
-**Fix applied:** rewrote `callModel()` to consume the async iterator directly
-(`for await (const chunk of chunks)`) and re-encode `chunk.response` as plain
-UTF-8 text ourselves — no manual SSE/JSON parsing left at all. Typechecks
-clean; the exact model string isn't in the type catalog (has the
-`-fp8-fast` suffix), so TypeScript falls back to `Record<string, unknown>`
-for `env.AI.run()`'s return — cast through `unknown` to assert the real
-runtime shape, same pattern as before, now for the correct shape.
+**Reverted to the original byte-parsing approach** — confirmed working again
+against production. Added logging in place of the silent `catch` (and a
+`flush()` check for unconsumed buffer at stream end), so if the missing-digit
+symptom recurs, the exact malformed payload will show up in the Cloudflare
+dashboard (Workers & Pages → `larri-chat` → Logs) instead of vanishing
+without a trace.
+
+**Actual status:** back to the original (still-buggy-in-some-edge-case, but
+*working*) implementation. The digit-dropping bug is **not fixed** — only
+better instrumented. Next time it's reproduced, check the Worker's dashboard
+logs for a `sseToText: failed to parse` or `unconsumed buffer` entry before
+attempting another fix; don't repeat the mistake of changing the parsing
+strategy based on documentation alone without confirming the actual runtime
+shape first (e.g. temporarily return the raw undecoded stream and inspect it
+directly, the way we eventually did to catch this regression).
 
 **Separately, and still unresolved:** `max_tokens: 600` is a real, separate
 ceiling — worth revisiting (maybe 1000–1200) once real conversation costs are
-observed (see cost table in `conversational-agent.md` §5). Not touched in
-this pass; low priority next to the data-loss fix.
+observed (see cost table in `conversational-agent.md` §5).
 
-**Verification gap — do this once deployed:** this repo's `wrangler dev`
-can't reach Workers AI without `--remote` and a Cloudflare login neither this
-machine nor this session has. The fix is typechecked and the reasoning holds
-up against Cloudflare's own documented behavior, but **re-run the original
-repro prompt against production** ("Can you summarize Carlos's CV?" — the
-same one that first surfaced the missing "5+", "80+", "60%") and confirm the
-numbers survive before considering this fully closed.
+---
+
+## 4. Turnstile wait timeout too short — chat looked broken when a checkbox appeared
+
+**Status: fixed and verified.**
+
+**Symptom:** after deploying phase 2 (Turnstile), the chat appeared to not
+respond at all — every message came back with the generic "Sorry, I couldn't
+reach the assistant" fallback. Reported with a screenshot showing a real,
+unchecked Turnstile checkbox still sitting at the bottom of the panel.
+
+**Root cause:**
+[`src/components/ChatAgent.astro`](../src/components/ChatAgent.astro)'s
+`getTurnstileToken()` only waited **5 seconds** for the widget to produce a
+token before giving up and sending the request without one (guaranteed `403`
+from the server). Managed mode auto-passes most visitors near-instantly, but
+sometimes decides a visitor needs an interactive checkbox — and a human
+needs real time to notice a checkbox that just silently appeared at the
+bottom of a chat panel and click it. 5 seconds isn't enough, and there was no
+indication to the user that anything needed their attention.
+
+**Fix applied:**
+- Raised the wait to 60 seconds.
+- Added a visible in-chat message if no token arrives within 1.5s: "One
+  moment — verifying you're not a bot. If you see a checkbox appear below, go
+  ahead and check it." — instead of silence followed by a confusing failure.
+- Added a distinct, clearer failure message if verification genuinely never
+  completes ("I couldn't verify you're not a bot. Try again in a moment, or
+  reload the page.") instead of the generic network-error message, and
+  confirmed the send button correctly re-enables so the visitor isn't stuck.
+
+**Verified** by stubbing a fake Turnstile widget with an artificially delayed
+callback: confirmed the hint appears, the wait doesn't give up early, and a
+genuine timeout (no token ever arrives) recovers cleanly with a clear message
+and a working retry.
+
+**Not addressed — separate, optional ask:** the checkbox itself is a bit of
+friction when it does appear ("un poco incómodo"). The Turnstile widget is
+currently in **Managed** mode (Cloudflare's recommended default), which
+sometimes shows an interactive checkbox to visitors it flags as risky.
+Switching the widget to **Non-Interactive** mode (Cloudflare dashboard →
+Turnstile → the widget → mode) would show a small loading-spinner widget
+instead but never require a click — a code-free, dashboard-only change, not
+done here since it's a preference call, not a bug.
 
 ---
 
 ## Suggested next step
 
-All three have fixes applied and are ready to deploy together. After
-deploying: re-run the CV-summary repro prompt (closes the loop on #3), ask a
-projects question and check the links render as real, correct, clickable
-`<a>` tags (closes the loop on #1 and #2 together).
+#1 and #2 (links, markdown rendering) have fixes applied and deployed. #3
+(dropped digits) is genuinely still open — only better instrumented; don't
+attempt another fix without first confirming the actual failure via the new
+logging. #4 (Turnstile timeout) is fixed and verified. After any future
+deploy touching the chat: ask a projects question and check links render as
+real clickable `<a>` tags (closes the loop on #1 and #2 together if not
+already confirmed).

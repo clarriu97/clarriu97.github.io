@@ -533,8 +533,13 @@ const turnstileSiteKey =
 
     // The widget auto-runs on render and calls back with a token once
     // Cloudflare finishes evaluating the visitor (no explicit execute() call
-    // needed). Each token is single-use, so we hand it out and immediately
-    // reset for the next message.
+    // needed) — usually near-instant. But Managed mode sometimes decides a
+    // visitor needs an interactive checkbox instead of passing silently, and
+    // that requires an actual human to notice and click it — a few seconds
+    // isn't enough for that, so the timeout here needs to be generous. Each
+    // token is single-use, so we hand it out and immediately reset for the
+    // next message.
+    const TURNSTILE_WAIT_MS = 60_000
     const getTurnstileToken = async (): Promise<string | null> => {
       await ensureTurnstileWidget()
       if (!window.turnstile || turnstileWidgetId === null) return null
@@ -545,7 +550,7 @@ const turnstileSiteKey =
         return token
       }
       return new Promise((resolve) => {
-        const deadline = Date.now() + 5000
+        const deadline = Date.now() + TURNSTILE_WAIT_MS
         const poll = () => {
           if (turnstileToken) {
             const token = turnstileToken
@@ -665,12 +670,26 @@ const turnstileSiteKey =
 
       let acc = ""
       try {
+        // Most visitors get a token almost instantly (invisible check). If
+        // Cloudflare decides this one needs an interactive checkbox, that
+        // requires a human to actually notice and click it — say so instead
+        // of silently doing nothing until getTurnstileToken() eventually
+        // times out.
+        const hintTimer = setTimeout(() => {
+          setBubbleText(
+            replyEl,
+            "assistant",
+            "One moment — verifying you're not a bot. If you see a checkbox appear below, go ahead and check it.",
+          )
+        }, 1500)
         // Note: anonId stays client-side only (localStorage identity for the
         // single-thread UX). It isn't sent to the Worker — a custom header
         // here isn't in the Worker's CORS allow-list and would break the
         // request, and server-side rate limiting keys off the request IP
         // instead, which the client can't spoof.
         const turnstileToken = await getTurnstileToken()
+        clearTimeout(hintTimer)
+        if (!turnstileToken) throw new Error("verification failed")
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -688,12 +707,14 @@ const turnstileSiteKey =
           log.scrollTop = log.scrollHeight
         }
       } catch (err) {
-        const rateLimited = err instanceof Error && err.message === "rate limited"
+        const message = err instanceof Error ? err.message : ""
         acc =
           acc ||
-          (rateLimited
+          (message === "rate limited"
             ? "You've sent a lot of messages — please wait a bit before trying again."
-            : "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com.")
+            : message === "verification failed"
+              ? "I couldn't verify you're not a bot. Try again in a moment, or reload the page."
+              : "Sorry, I couldn't reach the assistant right now. You can email Carlos at larriucarlos@gmail.com.")
         setBubbleText(replyEl, "assistant", acc)
       } finally {
         bubble.classList.remove("is-streaming")
