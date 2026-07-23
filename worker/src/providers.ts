@@ -34,9 +34,12 @@ export interface ModelEnv {
   AI: Ai
 }
 
-// Cheap, fast, good enough for Q&A about a person. Swap for a bigger model
-// (e.g. @cf/meta/llama-4-scout-17b-16e-instruct) if you want more polish.
-const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast'
+// Upgraded from llama-3.1-8b-instruct-fp8-fast: the 8B model reliably failed
+// to copy dossier URLs verbatim (e.g. "clarriu97" -> "clarriu" — see
+// docs/known-limitations.md #1), even with explicit "copy this exactly"
+// instructions. Scout follows instructions more reliably at ~5x the neuron
+// cost — still cheap, see the cost table in docs/conversational-agent.md §5.
+const MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct'
 
 export async function callModel(
   env: ModelEnv,

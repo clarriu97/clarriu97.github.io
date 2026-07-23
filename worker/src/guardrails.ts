@@ -13,8 +13,8 @@ export interface GuardrailEnv {
   TURNSTILE_SECRET_KEY?: string
 }
 
-const RATE_LIMIT_PER_MINUTE = 10
-const RATE_LIMIT_PER_DAY = 50
+const RATE_LIMIT_PER_MINUTE = 4
+const RATE_LIMIT_PER_DAY = 15
 
 export async function verifyTurnstile(secretKey: string, token: string, ip: string): Promise<boolean> {
   try {

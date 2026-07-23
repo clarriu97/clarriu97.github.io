@@ -390,6 +390,19 @@ const turnstileSiteKey =
   const GREETING =
     "Hi — ask me anything about Carlos: his work, projects, or how to reach him."
 
+  // The model is asked to copy GitHub links verbatim from the dossier, but
+  // (at least on the smaller model this was first observed with) reliably
+  // dropped the "97" from "clarriu97" anyway — no LLM is a guaranteed
+  // verbatim-copy machine for an unusual token sequence embedded in longer
+  // generated text, no matter how the prompt is worded. Kept as a backstop
+  // even after upgrading the model (see worker/src/providers.ts). Patches
+  // `clarriu` -> `clarriu97` wherever it's followed by a non-word character
+  // (path separator, quote, end of string, etc.) — covers both
+  // "clarriu/vericlient" and the bare profile link "clarriu" with no
+  // trailing path. The negative lookahead + word boundary mean an
+  // already-correct `clarriu97` is left untouched, not double-fixed.
+  const fixKnownLinks = (s: string): string => s.replace(/clarriu(?!97)\b/g, "clarriu97")
+
   // --- Minimal markdown renderer for assistant replies -----------------
   // Narrow on purpose: bold, http(s) links, and "- "/"* " bullet lists — the
   // only markdown the model actually produces. Always escape first so any
@@ -412,7 +425,7 @@ const turnstileSiteKey =
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
 
   const renderMarkdown = (raw: string): string => {
-    const lines = escapeHtml(raw).split("\n")
+    const lines = escapeHtml(fixKnownLinks(raw)).split("\n")
     const parts: string[] = []
     let list: string[] = []
     let para: string[] = []

@@ -11,7 +11,7 @@ architecture and the decisions behind it.
 
 - `src/index.ts` — request handler: CORS, validation, guardrails, streaming response.
 - `src/knowledge.ts` — the dossier (what the bot knows) + system prompt / topic guardrail. **Edit this to change what the bot says.**
-- `src/providers.ts` — the model adapter (the swappable boundary). Default: Cloudflare Workers AI + Llama 3.1 8B.
+- `src/providers.ts` — the model adapter (the swappable boundary). Default: Cloudflare Workers AI + Llama 4 Scout 17B.
 - `src/guardrails.ts` — Turnstile verification + per-IP KV rate limiting (abuse protection, see below).
 
 ## Deploy
@@ -102,11 +102,18 @@ before the model call (CORS, Turnstile, rate limiting) can be tested without it.
 
 ## Cost & limits
 
-- Workers AI free allocation: 10,000 neurons/day (~50+ conversations/day on the
-  default model). Beyond that, ~$0.011 / 1,000 neurons.
+- Workers AI free allocation: 10,000 neurons/day. On Llama 4 Scout 17B
+  (~850 neurons per typical 6-turn conversation), that's ~11 conversations/day
+  free; beyond that, ~$0.011 / 1,000 neurons (still cents/day at realistic
+  traffic). See the cost table in `docs/conversational-agent.md` §5.
 - **Guardrails (both layers implemented):**
   - Layer A (scope): topic guardrail in the system prompt, max 20
     messages/turn, max 2,000 chars/message.
   - Layer B (abuse): Cloudflare Turnstile (blocks scripted/non-browser
-    callers) + per-IP rate limit via KV — 10 requests/minute, 50/day. Exceeding
-    either returns 403 (failed verification) or 429 (rate limited).
+    callers) + per-IP rate limit via KV — **4 requests/minute, 15/day**.
+    Exceeding either returns 403 (failed verification) or 429 (rate limited).
+    Deliberately tight relative to the free-tier math above: no site-wide
+    daily cutoff exists, so the per-IP cap is the only thing standing between
+    a handful of heavy individual users and exceeding the free tier — see
+    `docs/known-limitations.md` for the site-wide-cap option that was
+    considered and deliberately not built.

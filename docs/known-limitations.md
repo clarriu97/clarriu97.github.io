@@ -13,8 +13,9 @@ would have shown up publicly as opened by the wrong identity.
 
 ## 1. Poor / non-clickable references (links, repos, blog posts)
 
-**Status: fix applied, verify link accuracy against real production traffic
-over time.**
+**Status: prompt-based fix confirmed NOT sufficient on its own; patched with
+a deterministic client-side correction + upgraded the model. Verify all
+three together against real production traffic.**
 
 **Symptom:** when the bot mentions a project or link, it comes out as plain
 text, not a clickable link — e.g. asked "what projects has Carlos built?" in
@@ -44,12 +45,34 @@ verbatim. The model was reconstructing them from memory of the prose.
 - Depended on #2 landing first (a correct markdown link is useless if the
   widget shows it as literal `[text](url)`) — both shipped together.
 
-**Not fully closed:** this makes the wrong-username failure mode much less
-likely (the model now has an exact string to copy instead of reconstructing
-one), but an LLM copying text isn't a 100% guarantee the way a template
-substitution would be. Worth spot-checking occasionally against real
-questions, and worth extending the dossier's link coverage once the blog
-ships (currently stashed, not live).
+**Turned out not to be enough:** re-tested against production with the exact
+same "what projects has Carlos built" question — **same exact failure**,
+`clarriu` instead of `clarriu97`, twice, despite the verbatim markdown link
+and the explicit "copy exactly" instruction. Llama 3.1 8B just isn't a
+reliable verbatim-copy machine for an unusual token sequence embedded in
+longer generated text, no matter how the prompt is worded — this is a model
+capability limit, not a prompt-wording problem.
+
+**Two more fixes layered on top:**
+- **Deterministic client-side correction**
+  ([`src/components/ChatAgent.astro`](../src/components/ChatAgent.astro),
+  `fixKnownLinks()`): a targeted regex patches the one specific, recurring
+  failure — `clarriu/` (missing the "97") becomes `clarriu97/` — applied to
+  the raw model output before markdown rendering. Verified locally: fixes the
+  broken pattern, leaves an already-correct `clarriu97/` untouched (negative
+  lookahead), doesn't affect anything else in the text.
+- **Model upgrade** to `llama-4-scout-17b-16e-instruct` (see
+  `conversational-agent.md` §5) — better instruction-following in general,
+  which should reduce (though not provably eliminate) this class of failure
+  across the board, not just for this one URL.
+
+**Still not "fully closed" in the sense of a guarantee:** the regex only
+covers the one specific pattern we've actually observed failing. If the model
+mangles a *different* link in some other way, this fix won't catch it. The
+model upgrade is the more general mitigation; the regex is a targeted
+backstop for the one confirmed recurring case. Worth extending the dossier's
+link coverage once the blog ships (currently stashed, not live), and worth
+spot-checking other links (LinkedIn, portfolio) occasionally.
 
 ---
 

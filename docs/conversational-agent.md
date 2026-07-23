@@ -151,6 +151,35 @@ not $0, and the setup is materially heavier (AWS account, Bedrock model-access r
 IAM, SigV4 signing, a Lambda or signing logic in the Worker). Worth switching to only if
 we want AWS specifically or find Llama 8B's quality lacking.
 
+**Update (2026-07-23) — upgraded to `llama-4-scout-17b-16e-instruct`.** Llama 3.1 8B's
+quality *was* the limiting factor: it reliably failed to copy a dossier URL verbatim
+(e.g. `clarriu97` → `clarriu`, see `docs/known-limitations.md` #1) even with an explicit
+"copy this exactly, character-for-character" system-prompt instruction — an 8B model
+just isn't a reliable verbatim-copy machine for an unusual token sequence embedded in
+longer generated text, regardless of prompting. Scout follows instructions more
+reliably at ~5x the neuron cost:
+
+| Model | Neurons/conversation¹ | Free-tier conversations/day | At 5 conv/day |
+|---|---|---|---|
+| Llama 3.1 8B (previous) | ~176 | ~57 | 8.8% of free tier |
+| **Llama 4 Scout 17B (current)** | **~852** | **~12** | **42% of free tier** |
+| Llama 3.3 70B (considered, not chosen) | ~1,107 | ~9 | 55% of free tier |
+
+Scout was chosen over 70B as the middle ground: meaningfully better instruction-following
+than 8B, without giving up as much free-tier headroom as the full 70B model. Still
+effectively free at the ~5 conversations/day this site actually expects, and even well
+beyond that the overage cost is cents/day, not a real budget risk — see the tightened
+per-IP rate limit in §7 for what actually protects against that.
+
+**Considered and explicitly not built: a site-wide daily spend cutoff.** A single
+shared KV counter (independent of the per-IP one) could track total requests/day across
+*all* visitors combined and return a graceful "assistant unavailable today" response
+once a threshold is crossed — the per-IP limit alone doesn't stop many *different*
+visitors from collectively exceeding the free tier. Decided against building it: the
+tightened per-IP cap (§7) was judged sufficient given real expected traffic (~5
+conversations/day), and even a fully-exhausted free tier only costs cents/day beyond it.
+Revisit if traffic ever meaningfully exceeds the ~5/day assumption this was sized for.
+
 ---
 
 ## 6. Decision — Context strategy ("the knowledge")
@@ -191,8 +220,11 @@ is called:
   token with each message; the Worker verifies it against Cloudflare's siteverify
   endpoint. Proves the caller executed real browser JS — blocks curl/script traffic
   outright, independent of CORS (which only browsers respect).
-- **Rate limiting per IP via Workers KV.** Fixed-window counters, 10 requests/minute
-  and 50/day per `CF-Connecting-IP`. Keyed off the request IP rather than a
+- **Rate limiting per IP via Workers KV.** Fixed-window counters, **4 requests/minute
+  and 15/day** per `CF-Connecting-IP` (tightened from an initial 10/min, 50/day once
+  Scout's higher per-conversation cost meant the per-IP cap became the main thing
+  standing between a few heavy visitors and exceeding the free tier — see the
+  site-wide-cutoff discussion in §5, deliberately not built). Keyed off the request IP rather than a
   client-supplied ID (e.g. `anon_id`) specifically because the client can reset or
   spoof any identifier it controls — the IP is the one thing it can't choose.
   Bounds volume even from a real, Turnstile-verified browser.
@@ -245,7 +277,7 @@ flowchart TD
     end
     subgraph CF["Cloudflare"]
         WK["Worker — chat.larri.dev<br/>1. verify Turnstile + rate-limit (KV)<br/>2. inject dossier (system prompt)<br/>3. callModel() adapter<br/>4. stream response (SSE)"]
-        AI["Workers AI<br/>llama-3.1-8b-fp8-fast<br/>(default provider)"]
+        AI["Workers AI<br/>llama-4-scout-17b-16e<br/>(default provider)"]
     end
     ALT["Swappable: Bedrock Nova / Gemini / Anthropic<br/>(one-function change)"]
 
@@ -272,10 +304,10 @@ flowchart TD
 
 ## 11. Open questions
 
-- Cloudflare account with Workers enabled — confirmed?
-- Route: subdomain (`chat.larri.dev`) vs path (`larri.dev/api/chat`)?
-- Is Llama 3.1 8B quality good enough, or start on Llama 4 Scout / Nova Micro for a bit
-  more polish (still cents/month)?
+- ~~Cloudflare account with Workers enabled — confirmed?~~ Done — deployed and live.
+- Route: subdomain (`chat.larri.dev`) vs path (`larri.dev/api/chat`)? Still on the
+  `*.workers.dev` URL; not yet decided.
+- ~~Is Llama 3.1 8B quality good enough?~~ No — upgraded to Llama 4 Scout 17B (§5).
 - Confirm the stale "Technical Trainer … Present" status and spoken languages before
   they go into the public dossier.
 
