@@ -2,6 +2,15 @@ name = "larri-chat"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# Persists console.log/console.error output (see sseToText's diagnostic
+# logging in src/providers.ts) to the dashboard: Workers & Pages -> larri-chat
+# -> Logs. Committed here so `wrangler deploy` (via CI) doesn't silently
+# revert a dashboard-only toggle on the next push.
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+
 # Workers AI binding — this is what makes env.AI.run(...) work. No API key needed.
 [ai]
 binding = "AI"
