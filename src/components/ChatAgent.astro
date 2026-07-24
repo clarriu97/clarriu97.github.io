@@ -404,10 +404,12 @@ const turnstileSiteKey =
   const fixKnownLinks = (s: string): string => s.replace(/clarriu(?!97)\b/g, "clarriu97")
 
   // --- Minimal markdown renderer for assistant replies -----------------
-  // Narrow on purpose: bold, http(s) links, and "- "/"* " bullet lists — the
-  // only markdown the model actually produces. Always escape first so any
-  // raw HTML/URLs from the model can't inject tags or break out of
-  // attributes; only http(s) links are linkified (no javascript:/data: etc).
+  // Narrow on purpose: bold, http(s)/mailto links, and "- "/"* " bullet
+  // lists — the only markdown the model actually produces. Always escape
+  // first so any raw HTML/URLs from the model can't inject tags or break out
+  // of attributes; only http(s)/mailto are linkified (no javascript:/data:
+  // etc — the model does write the dossier's email as a markdown mailto
+  // link, so it needs to be allowed alongside http(s), not just those).
   const escapeHtml = (s: string): string =>
     s
       .replace(/&/g, "&amp;")
@@ -419,7 +421,7 @@ const turnstileSiteKey =
   const renderInline = (s: string): string =>
     s
       .replace(
-        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
         (_m, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`,
       )
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")

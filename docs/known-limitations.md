@@ -91,8 +91,8 @@ asterisks, literal `[text](url)`.
 **Fix applied:**
 - Added a small, purpose-built markdown renderer (`escapeHtml` /
   `renderInline` / `renderMarkdown` in `ChatAgent.astro`) — handles exactly
-  what the model produces: **bold**, `[text](url)` links (http/https only,
-  no `javascript:`/`data:` schemes), and `- `/`* ` bullet lists.
+  what the model produces: **bold**, `[text](url)` links, and `- `/`* `
+  bullet lists.
 - **HTML-escapes the raw text first**, before any tag construction, so the
   model's output can never inject real HTML/script into the page even though
   it's rendered via `innerHTML` — verified by feeding a fake response
@@ -104,10 +104,15 @@ asterisks, literal `[text](url)`.
   now produces, and scoped the old `white-space: pre-wrap` rule to user
   bubbles only (it was written for a single plain-text node, not real markup).
 
-**Verified locally** with a stubbed streaming response containing bold, a
-link list, and an injection attempt — all rendered correctly, escaping held.
-Not yet re-checked against real, live model output in production (do that
-after deploying, alongside #1 and #3).
+**Verified locally, then a real production gap found and fixed:** a stubbed
+test (bold, a link list, an injection attempt) rendered correctly. Against
+real production output, the model wrote the dossier's contact email as
+`[email](mailto:larriucarlos@gmail.com)` — the link regex only recognized
+`https?://`, deliberately excluding non-http schemes for safety, but hadn't
+anticipated `mailto:` as a legitimate one. Broadened to accept `https?://` or
+`mailto:` specifically (still no `javascript:`/`data:`/etc.) — re-verified
+locally that mailto links render as real `<a>` tags while the two malicious
+schemes stay inert escaped text.
 
 ---
 
@@ -219,10 +224,22 @@ done here since it's a preference call, not a bug.
 
 ## Suggested next step
 
-#1 and #2 (links, markdown rendering) have fixes applied and deployed. #3
-(dropped digits) is genuinely still open — only better instrumented; don't
-attempt another fix without first confirming the actual failure via the new
-logging. #4 (Turnstile timeout) is fixed and verified. After any future
-deploy touching the chat: ask a projects question and check links render as
-real clickable `<a>` tags (closes the loop on #1 and #2 together if not
-already confirmed).
+**Verified against real production traffic (clean browser tab, no stubbing)
+after the Scout upgrade:**
+- #1 (links) — confirmed fixed: a real response linked Vericlient and
+  weather-tty with the correct `clarriu97` username, no regex patch even
+  needed to kick in for that particular response.
+- #2 (markdown) — confirmed fixed, plus the `mailto:` gap found and fixed
+  (above).
+- #3 (dropped digits) — confirmed **still broken**, unchanged by the model
+  upgrade: the exact same CV-summary prompt against Scout still produced
+  "with **+** years of experience." This was expected (see §5 in
+  `conversational-agent.md` — the bug is in the Worker's SSE parsing, not
+  model quality) but worth having it confirmed rather than assumed.
+- #4 (Turnstile timeout) — fixed and verified earlier, not re-tested this
+  round.
+
+**Remaining open work:** only #3. Don't attempt another fix without first
+checking the Cloudflare dashboard (Workers & Pages → `larri-chat` → Logs) for
+a `sseToText: failed to parse` or `unconsumed buffer` entry from one of these
+real repros — the logging has now had real opportunities to fire.
