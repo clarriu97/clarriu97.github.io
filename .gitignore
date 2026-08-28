@@ -24,3 +24,14 @@ yarn.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# aws-bot: Lambda build artifacts, Terraform state/cache, Python venvs
+# (server/app/data/ — the dossier — IS committed: it's the public-safe output
+# of career-ops' allowlist/denylist export, and it's how prod gets its data)
+aws-bot/build/
+aws-bot/terraform/.terraform/
+aws-bot/terraform/*.tfstate
+aws-bot/terraform/*.tfstate.*
+aws-bot/server/.venv/
+__pycache__/
+*.pyc
