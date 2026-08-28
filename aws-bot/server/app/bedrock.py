@@ -18,7 +18,7 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        _client = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "eu-west-1"))
+        _client = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION_NAME", "eu-west-1"))
     return _client
 
 

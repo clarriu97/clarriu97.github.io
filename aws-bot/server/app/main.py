@@ -52,7 +52,11 @@ def chat(req: ChatRequest, request: Request):
     if not guardrails.verify_turnstile(req.turnstileToken, ip):
         return PlainTextResponse("Verification failed", status_code=403)
 
-    if not guardrails.check_rate_limit(ip):
+    try:
+        allowed = guardrails.check_rate_limit(ip)
+    except Exception:
+        allowed = False  # fail closed — a DynamoDB blip shouldn't open the gate
+    if not allowed:
         return PlainTextResponse("Too many requests, try again later", status_code=429)
 
     clean = []
