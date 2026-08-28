@@ -10,3 +10,8 @@ dependencies = [
     "mangum>=0.22.0",
     "pydantic>=2.13.4",
 ]
+
+[dependency-groups]
+dev = [
+    "uvicorn[standard]>=0.52.4",
+]
