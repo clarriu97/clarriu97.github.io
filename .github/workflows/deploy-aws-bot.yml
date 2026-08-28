@@ -1,0 +1,63 @@
+name: Deploy AWS bot
+
+# Deploys aws-bot/ (Lambda + Terraform, single environment) whenever it
+# changes on master. Runs independently of the site deploy (deploy.yml) and
+# the Cloudflare Worker deploy (deploy-worker.yml).
+#
+# Requires one-time setup before this workflow can run (not done yet — see
+# aws-bot/README.md): an IAM role trusting token.actions.githubusercontent.com
+# for this repo (secret AWS_GITHUB_ACTIONS_ROLE_ARN), an S3 bucket + DynamoDB
+# table for Terraform state, and two more secrets: ALERT_EMAIL and
+# TURNSTILE_SECRET_KEY (same value as the Cloudflare Worker's).
+#
+# A required reviewer on the "production" GitHub Environment (Settings ->
+# Environments) is recommended — a manual approval gate before anything that
+# costs money deploys.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "aws-bot/**"
+      - ".github/workflows/deploy-aws-bot.yml"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write # required for OIDC — no long-lived AWS keys as secrets
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+
+      - name: Build Lambda package
+        working-directory: aws-bot
+        run: ./scripts/build-lambda-package.sh arm64
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: aws-bot/terraform
+        run: terraform init
+
+      - name: Terraform apply
+        working-directory: aws-bot/terraform
+        run: |
+          terraform apply -auto-approve \
+            -var="alert_email=${{ secrets.ALERT_EMAIL }}" \
+            -var="turnstile_secret_key=${{ secrets.TURNSTILE_SECRET_KEY }}"
