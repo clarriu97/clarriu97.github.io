@@ -1,7 +1,7 @@
 Portfolio for programmers and developers.
 Cloned and adapted from [midudev/porfolio.dev](https://github.com/midudev/porfolio.dev)
 
-Live version available at https://clarriu97.github.io/
+Live version available at https://larri.dev/
 
 # Local development
 
