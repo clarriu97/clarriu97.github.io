@@ -1,37 +1,37 @@
-Porfolio para programadores y desarrolladores.
-Clonado y adaptado de [midudev/porfolio.dev](https://github.com/midudev/porfolio.dev)
+Portfolio for programmers and developers.
+Cloned and adapted from [midudev/porfolio.dev](https://github.com/midudev/porfolio.dev)
 
-Versión desplegada disponible en https://clarriu97.github.io/
+Live version available at https://clarriu97.github.io/
 
-# Desarrollo local
+# Local development
 
-⚠️ **Este proyecto usa pnpm como gestor de paquetes**
+⚠️ **This project uses pnpm as its package manager**
 
-- Instalar pnpm (si no lo tienes):
+- Install pnpm (if you don't have it):
 
   ```bash
   npm install -g pnpm
   ```
 
-- Instalar dependencias:
+- Install dependencies:
 
   ```bash
   pnpm install
   ```
 
-- Iniciar servidor de desarrollo:
+- Start the dev server:
 
   ```bash
   pnpm start
   ```
 
-- Construir aplicación:
+- Build the app:
 
   ```bash
   pnpm build
   ```
 
-# 👨🏻‍💻 Porfolio para programadores y desarrolladores
+# 👨🏻‍💻 Portfolio for programmers and developers
 
 <div align="center">
 <a href="https://porfolio.dev/">
@@ -51,7 +51,7 @@ Versión desplegada disponible en https://clarriu97.github.io/
 
 </div>
 
-## 🫂 Contribuidores
+## 🫂 Contributors
 
 <a href="https://github.com/midudev/porfolio.dev/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=midudev/porfolio.dev" />
