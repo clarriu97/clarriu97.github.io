@@ -1,0 +1,133 @@
+---
+import { getCollection } from "astro:content"
+
+import BreadcrumbBar from "@/components/BreadcrumbBar.astro"
+import Layout from "@/layouts/Layout.astro"
+import BlogPostCard from "@/components/BlogPostCard.astro"
+import SectionContainer from "@/components/SectionContainer.astro"
+import TitleSection from "@/components/TitleSection.astro"
+import Link from "@/components/icons/Link.astro"
+
+const published = await getCollection("blog", ({ data }) => !data.draft)
+const byDate = (a: (typeof published)[0], b: (typeof published)[0]) =>
+  b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+const sorted = [...published].sort(byDate)
+const featured = sorted.filter(({ data }) => data.featured)
+const rest = sorted.filter(({ data }) => !data.featured)
+const showFeaturedBlock = featured.length > 0
+const showRestBlock = rest.length > 0
+const showAllAsSingleList = !showFeaturedBlock && sorted.length > 0
+---
+
+<Layout
+  title="Blog | Carlos Larriu"
+  description="Notes on backend engineering, DevOps, and building reliable systems."
+>
+  <main class="px-4">
+    <SectionContainer class="py-24 md:py-32">
+      <BreadcrumbBar
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Blog" },
+        ]}
+      />
+      <p class="mb-4 mt-8 text-sm font-medium uppercase tracking-wide text-[var(--accent)]">
+        Writing
+      </p>
+      <h1 class="text-4xl font-semibold tracking-tight text-[var(--text)] sm:text-5xl">
+        Blog
+      </h1>
+      <p class="mt-6 max-w-2xl text-lg text-[var(--muted)]">
+        Long-form notes and experiments. Same stack as the rest of the site — static, fast, and easy to extend.
+      </p>
+      <p class="mt-4 max-w-2xl text-sm text-[var(--muted)]">
+        <a href="/" class="font-medium text-[var(--accent)] underline-offset-2 hover:underline">
+          Back to the portfolio
+        </a>
+        {" "}
+        for experience, projects, and contact.
+      </p>
+    </SectionContainer>
+
+    {
+      showFeaturedBlock && (
+        <SectionContainer class="pb-16">
+          <TitleSection>
+            <Link class="size-8" />
+            Featured
+          </TitleSection>
+          <ul class="grid gap-6 md:grid-cols-2">
+            {featured.map((post) => (
+              <li>
+                <BlogPostCard
+                  slug={post.slug}
+                  title={post.data.title}
+                  description={post.data.description}
+                  pubDate={post.data.pubDate}
+                  tags={post.data.tags}
+                  featured
+                />
+              </li>
+            ))}
+          </ul>
+        </SectionContainer>
+      )
+    }
+
+    {
+      showRestBlock && (
+        <SectionContainer class="pb-24 md:pb-32">
+          <TitleSection>
+            <Link class="size-8" />
+            {showFeaturedBlock ? "All posts" : "Posts"}
+          </TitleSection>
+          <ul class="flex flex-col gap-6">
+            {rest.map((post) => (
+              <li>
+                <BlogPostCard
+                  slug={post.slug}
+                  title={post.data.title}
+                  description={post.data.description}
+                  pubDate={post.data.pubDate}
+                  tags={post.data.tags}
+                />
+              </li>
+            ))}
+          </ul>
+        </SectionContainer>
+      )
+    }
+
+    {
+      showAllAsSingleList && (
+        <SectionContainer class="pb-24 md:pb-32">
+          <TitleSection>
+            <Link class="size-8" />
+            Posts
+          </TitleSection>
+          <ul class="flex flex-col gap-6">
+            {sorted.map((post) => (
+              <li>
+                <BlogPostCard
+                  slug={post.slug}
+                  title={post.data.title}
+                  description={post.data.description}
+                  pubDate={post.data.pubDate}
+                  tags={post.data.tags}
+                />
+              </li>
+            ))}
+          </ul>
+        </SectionContainer>
+      )
+    }
+
+    {
+      sorted.length === 0 && (
+        <SectionContainer class="pb-24 md:pb-32">
+          <p class="text-[var(--muted)]">No posts yet. Check back soon.</p>
+        </SectionContainer>
+      )
+    }
+  </main>
+</Layout>

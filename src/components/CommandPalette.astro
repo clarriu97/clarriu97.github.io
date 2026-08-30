@@ -1,8 +1,12 @@
 ---
+import { getCollection } from "astro:content"
+
 import Home from "./icons/Home.astro"
 import Briefcase from "./icons/Briefcase.astro"
 import CodeIcon from "./icons/Code.astro"
+import Link from "./icons/Link.astro"
 import ProfileCheck from "./icons/ProfileCheck.astro"
+import FileText from "./icons/FileText.astro"
 import Mail from "./icons/Mail.astro"
 import GitHub from "./icons/GitHub.astro"
 import LinkedIn from "./icons/LinkedIn.astro"
@@ -15,12 +19,25 @@ const assistantCommands = [
   { label: "Ask about Carlos", value: "chat", keywords: "chat ask ai assistant bot question talk agent", Icon: ChatIcon, action: "chat" },
 ]
 
+const posts = (await getCollection("blog"))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+
 const navCommands = [
   { label: "Home", value: "/", keywords: "home start top intro", Icon: Home, action: "nav" },
   { label: "Experience", value: "/#experience", keywords: "experience work jobs career roles", Icon: Briefcase, action: "nav" },
   { label: "Projects", value: "/#projects", keywords: "projects portfolio code repos work", Icon: CodeIcon, action: "nav" },
+  { label: "Blog", value: "/blog", keywords: "blog writing posts articles notes", Icon: Link, action: "nav" },
   { label: "About", value: "/#about-me", keywords: "about me bio story", Icon: ProfileCheck, action: "nav" },
 ]
+
+const postCommands = posts.map((post) => ({
+  label: post.data.title,
+  value: `/blog/${post.slug}`,
+  keywords: `${post.data.title} ${post.data.description} ${(post.data.tags ?? []).join(" ")} blog post article`,
+  Icon: FileText,
+  action: "nav",
+}))
 
 const socialCommands = [
   { label: "Email Carlos", value: "mailto:larriucarlos@gmail.com", keywords: "email contact mail reach write", Icon: Mail, action: "mail", hint: "↗" },
@@ -37,6 +54,7 @@ const themeCommands = [
 const groups = [
   { id: "assistant", title: "Assistant", items: assistantCommands },
   { id: "nav", title: "Navigation", items: navCommands },
+  { id: "blog", title: "Blog posts", items: postCommands },
   { id: "social", title: "Connect", items: socialCommands },
   { id: "theme", title: "Theme", items: themeCommands },
 ].filter((group) => group.items.length > 0)
