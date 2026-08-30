@@ -13,12 +13,18 @@ name: Deploy AWS bot
 # A required reviewer on the "production" GitHub Environment (Settings ->
 # Environments) is recommended — a manual approval gate before anything that
 # costs money deploys.
+# Auto-trigger on push is disabled until the one-time bootstrap above is done
+# (AWS_GITHUB_ACTIONS_ROLE_ARN doesn't exist yet, so every push-triggered run
+# fails at the OIDC credentials step). Re-enable by uncommenting the `push:`
+# block once the bootstrap secrets are in place. Manual runs still work via
+# `workflow_dispatch` (Actions tab -> Deploy AWS bot -> Run workflow, or
+# `gh workflow run deploy-aws-bot.yml`).
 on:
-  push:
-    branches: [master]
-    paths:
-      - "aws-bot/**"
-      - ".github/workflows/deploy-aws-bot.yml"
+  # push:
+  #   branches: [master]
+  #   paths:
+  #     - "aws-bot/**"
+  #     - ".github/workflows/deploy-aws-bot.yml"
   workflow_dispatch: {}
 
 permissions:
