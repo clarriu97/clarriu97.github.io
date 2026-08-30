@@ -11,7 +11,7 @@ terraform {
   # S3 backend for state — bucket/table created once per AWS account via
   # a bootstrap step (see ../README.md), then wired in here. Left unconfigured
   # until that bootstrap runs; `terraform init` will prompt for backend config.
-  backend "s3" {}
+  # backend "s3" {}  # sin bootstrap todavía — estado local por ahora
 }
 
 provider "aws" {

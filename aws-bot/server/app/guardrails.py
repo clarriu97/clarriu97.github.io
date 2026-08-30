@@ -55,8 +55,9 @@ def _increment_counter(pk: str, limit: int, ttl_seconds: int) -> bool:
     try:
         _get_table().update_item(
             Key={"pk": pk},
-            UpdateExpression="ADD hits :one SET ttl = if_not_exists(ttl, :ttl)",
+            UpdateExpression="ADD hits :one SET #ttl = if_not_exists(#ttl, :ttl)",
             ConditionExpression="attribute_not_exists(hits) OR hits < :limit",
+            ExpressionAttributeNames={"#ttl": "ttl"},
             ExpressionAttributeValues={
                 ":one": 1,
                 ":limit": limit,
