@@ -11,10 +11,6 @@ enabled = true
 invocation_logs = true
 persist = true
 
-# Workers AI binding — this is what makes env.AI.run(...) work. No API key needed.
-[ai]
-binding = "AI"
-
 # Origins allowed to call the Worker (CORS). Add your production domain here.
 [vars]
 ALLOWED_ORIGINS = "https://larri.dev,http://localhost:4321"

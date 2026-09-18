@@ -11,7 +11,7 @@ architecture and the decisions behind it.
 
 - `src/index.ts` — request handler: CORS, validation, guardrails, streaming response.
 - `src/knowledge.ts` — the dossier (what the bot knows) + system prompt / topic guardrail. **Edit this to change what the bot says.**
-- `src/providers.ts` — the model adapter (the swappable boundary). Default: Cloudflare Workers AI + Llama 4 Scout 17B.
+- `src/providers.ts` — the model adapter (the swappable boundary). Default: OpenAI API, `gpt-4.1-mini`.
 - `src/guardrails.ts` — Turnstile verification + per-IP KV rate limiting (abuse protection, see below).
 
 ## Deploy
@@ -29,7 +29,13 @@ Requires a (free) Cloudflare account. **One-time setup before the first deploy**
    Paste the returned `id` into `wrangler.toml`'s `[[kv_namespaces]]` block
    (replacing `REPLACE_WITH_KV_NAMESPACE_ID`).
 
-2. **Turnstile widget (proves a caller is a real browser, not a script):**
+2. **OpenAI API key:** get one at
+   [platform.openai.com/api-keys](https://platform.openai.com/api-keys). Add
+   it as a GitHub repo secret named `OPENAI_API_KEY` — the deploy workflow
+   pushes it to the Worker automatically — or push it manually with
+   `npx wrangler secret put OPENAI_API_KEY`.
+
+3. **Turnstile widget (proves a caller is a real browser, not a script):**
    Cloudflare dashboard -> Turnstile -> Add site -> domain `larri.dev` (add
    `localhost` too if you want it to also fully verify in local dev, though the
    test keys below already work locally without this). You get a **Site Key**
@@ -49,7 +55,7 @@ Requires a (free) Cloudflare account. **One-time setup before the first deploy**
 Then deploy:
 
 ```bash
-npx wrangler deploy         # [ai] binding enables Workers AI, no API key needed
+npx wrangler deploy
 ```
 
 After the first deploy you get a `*.workers.dev` URL. Test it:
@@ -75,22 +81,23 @@ the frontend widget at that URL.
 npx wrangler dev
 ```
 
-Create a `.dev.vars` file (gitignored) with a Turnstile secret so the
-guardrail doesn't 500 locally:
+Create a `.dev.vars` file (gitignored) with a Turnstile secret and a real
+OpenAI API key:
 
 ```
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+OPENAI_API_KEY=sk-...
 ```
 
-That's Cloudflare's public "always passes" test secret — pairs with the
-default test site key already baked into `ChatAgent.astro`, so local
+The Turnstile line is Cloudflare's public "always passes" test secret — pairs
+with the default test site key already baked into `ChatAgent.astro`, so local
 verification works without any real Turnstile setup. The `RATE_LIMIT` KV
 binding is emulated locally by `wrangler dev` automatically, even before the
 real namespace exists.
 
-Note: the `[ai]` binding needs a real, authenticated connection even in local
-dev (`wrangler login`) — Workers AI itself isn't emulated locally. Everything
-before the model call (CORS, Turnstile, rate limiting) can be tested without it.
+Note: `OPENAI_API_KEY` needs to be a real key even in local dev — OpenAI
+calls aren't emulated. Everything before the model call (CORS, Turnstile,
+rate limiting) can be tested without it.
 
 ## Config
 
@@ -99,13 +106,19 @@ before the model call (CORS, Turnstile, rate limiting) can be tested without it.
 - `RATE_LIMIT` (KV namespace, in `wrangler.toml`) — per-IP request counters.
 - `TURNSTILE_SECRET_KEY` (Worker secret, set via GitHub Actions or
   `wrangler secret put`) — verifies the Turnstile token sent by the client.
+- `OPENAI_API_KEY` (Worker secret, set via GitHub Actions or
+  `wrangler secret put`) — authenticates calls to the OpenAI API.
 
 ## Cost & limits
 
-- Workers AI free allocation: 10,000 neurons/day. On Llama 4 Scout 17B
-  (~850 neurons per typical 6-turn conversation), that's ~11 conversations/day
-  free; beyond that, ~$0.011 / 1,000 neurons (still cents/day at realistic
-  traffic). See the cost table in `docs/conversational-agent.md` §5.
+- OpenAI has no free tier — `gpt-4.1-mini` is billed per token
+  (see [openai.com/api/pricing](https://openai.com/api/pricing)). At the
+  guardrail caps below (4 req/min, 15 req/day per IP) and typical short
+  conversations, expect low cents/day at realistic traffic, but this is a
+  real variable cost from the first request, unlike the previous Workers AI
+  free allocation — see the cost table in `docs/conversational-agent.md` §5
+  (written for Workers AI; treat the "$0/month" framing there as no longer
+  accurate for the model call itself).
 - **Guardrails (both layers implemented):**
   - Layer A (scope): topic guardrail in the system prompt, max 20
     messages/turn, max 2,000 chars/message.

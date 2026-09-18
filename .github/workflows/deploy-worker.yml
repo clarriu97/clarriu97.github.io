@@ -39,5 +39,7 @@ jobs:
           command: deploy
           secrets: |
             TURNSTILE_SECRET_KEY
+            OPENAI_API_KEY
         env:
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

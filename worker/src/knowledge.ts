@@ -58,6 +58,8 @@ program.
 - AI / ML: LLM implementation (GPT, LLaMA), RAG pipelines, prompt engineering,
   model inference optimization, model serving, synthetic data, evals,
   production AI deployment.
+- AI agents: building and shipping production AI agents with LangGraph,
+  agent evaluation, guardrails, tool integration, and hallucination reduction.
 - Backend & architecture: microservices, async processing, distributed systems,
   FastAPI, Flask, Redis, Celery.
 - Cloud & DevOps: AWS AI/ML services, Docker, CI/CD, GitLab, GitHub, automated testing.

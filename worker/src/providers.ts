@@ -2,26 +2,16 @@
  * Provider adapter — the swappable boundary.
  *
  * Everything above this file (index.ts) is provider-agnostic. To move off
- * Cloudflare Workers AI to Bedrock Nova, Gemini, or Anthropic, you only change
+ * the OpenAI API to Bedrock Nova, Gemini, or Anthropic, you only change
  * this file. The contract is fixed:
  *
  *   callModel(env, messages) -> ReadableStream of plain UTF-8 text deltas
  *
  * The rest of the app just pipes that stream to the client.
  *
- * NOTE ON STREAM SHAPE: Cloudflare's own docs suggest `env.AI.run(model,
- * {stream:true})` is async-iterable and yields parsed `{response}` objects
- * directly (`for await (const chunk of stream) chunk.response`). We tried
- * that (consuming it as an async iterator, no manual SSE parsing) and it
- * broke completely in production — the loop completed with zero chunks and
- * no error, meaning whatever we got back was NOT yielding `{response}`
- * objects the way the docs describe, at least not for this model/setup.
- * Reverted to treating it as a raw byte ReadableStream of SSE frames
- * (`data: {"response":"..."}\n\n`), which is what actually works here.
- * See docs/known-limitations.md #3 for the still-open, separate bug (some
- * numeric substrings occasionally missing) — the logging added below is
- * meant to catch a real failing payload next time it happens, rather than
- * changing the parsing strategy again without evidence.
+ * Previously ran on Cloudflare Workers AI (Llama 4 Scout) via the native
+ * `env.AI` binding. Switched to OpenAI while Bedrock model access is stuck
+ * in an AWS account eligibility review with no ETA — see aws-bot/README.md.
  */
 
 export interface ChatMessage {
@@ -31,31 +21,38 @@ export interface ChatMessage {
 
 /** Only the bindings the adapter needs. Env (in index.ts) satisfies this. */
 export interface ModelEnv {
-  AI: Ai
+  OPENAI_API_KEY: string
 }
 
-// Upgraded from llama-3.1-8b-instruct-fp8-fast: the 8B model reliably failed
-// to copy dossier URLs verbatim (e.g. "clarriu97" -> "clarriu" — see
-// docs/known-limitations.md #1), even with explicit "copy this exactly"
-// instructions. Scout follows instructions more reliably at ~5x the neuron
-// cost — still cheap, see the cost table in docs/conversational-agent.md §5.
-const MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct'
+const MODEL = 'gpt-4.1-mini'
 
 export async function callModel(
   env: ModelEnv,
   messages: ChatMessage[],
 ): Promise<ReadableStream<Uint8Array>> {
-  // `stream: true` returns an SSE ReadableStream, but the binding's types infer
-  // the non-streaming response shape, so cast through `unknown`.
-  const aiStream = (await env.AI.run(MODEL, {
-    messages,
-    stream: true,
-    max_tokens: 600,
-  })) as unknown as ReadableStream<Uint8Array>
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      stream: true,
+      max_tokens: 600,
+    }),
+  })
 
-  // Workers AI streams SSE (`data: {"response":"..."}`). Normalize to plain text
-  // deltas so the client contract is provider-independent.
-  return aiStream.pipeThrough(sseToText())
+  if (!res.ok || !res.body) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`OpenAI request failed: ${res.status} ${detail}`)
+  }
+
+  // OpenAI streams SSE (`data: {"choices":[{"delta":{"content":"..."}}]}`,
+  // terminated by `data: [DONE]`). Normalize to plain text deltas so the
+  // client contract is provider-independent.
+  return res.body.pipeThrough(sseToText())
 }
 
 function sseToText(): TransformStream<Uint8Array, Uint8Array> {
@@ -75,16 +72,18 @@ function sseToText(): TransformStream<Uint8Array, Uint8Array> {
         const data = trimmed.slice(5).trim()
         if (data === '' || data === '[DONE]') continue
         try {
-          const json = JSON.parse(data) as { response?: string }
-          if (typeof json.response === 'string' && json.response.length > 0) {
-            controller.enqueue(encoder.encode(json.response))
+          const json = JSON.parse(data) as {
+            choices?: Array<{ delta?: { content?: string } }>
+          }
+          const delta = json.choices?.[0]?.delta?.content
+          if (typeof delta === 'string' && delta.length > 0) {
+            controller.enqueue(encoder.encode(delta))
           }
         } catch (err) {
-          // Log instead of silently swallowing — if a chunk-boundary split
-          // ever produces unparseable JSON (the leading suspect for #3's
-          // dropped digits), this shows up in the Cloudflare dashboard's
-          // Worker Logs (Workers & Pages -> larri-chat -> Logs), viewable
-          // without wrangler CLI access, with the exact malformed payload.
+          // Log instead of silently swallowing — a chunk-boundary split
+          // producing unparseable JSON would otherwise fail invisibly.
+          // Viewable in the Cloudflare dashboard (Workers & Pages ->
+          // larri-chat -> Logs) without wrangler CLI access.
           console.error('sseToText: failed to parse SSE data line', { data, err: String(err) })
         }
       }

@@ -260,6 +260,11 @@ const turnstileSiteKey =
     margin-bottom: 0;
   }
   .chat-assistant .chat-text ul {
+    /* Tailwind's Preflight resets ul { list-style: none } globally — restore
+       real bullets here, otherwise list items render as unmarked indented
+       lines that read as a rendering glitch, not a list. */
+    list-style: disc;
+    list-style-position: outside;
     margin: 0 0 0.6em;
     padding-left: 1.2em;
   }

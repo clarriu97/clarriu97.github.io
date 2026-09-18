@@ -121,7 +121,17 @@ export default {
       return new Response(stream, {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-store',
+          // no-transform tells any conforming intermediary (proxy, CDN edge)
+          // not to re-encode this response — gzip/br compression of a stream
+          // forces it to buffer the whole body before flushing, defeating
+          // the point of streaming.
+          'Cache-Control': 'no-store, no-transform',
+          // Explicit, accurate (the body genuinely isn't encoded) — and the
+          // documented workaround for a `wrangler dev`-only bug where
+          // Miniflare's local compression layer buffers the entire stream
+          // before sending it, unlike the real deployed edge:
+          // https://github.com/cloudflare/workers-sdk/issues/6577
+          'Content-Encoding': 'identity',
           'X-Content-Type-Options': 'nosniff',
           ...corsHeaders(origin),
         },
